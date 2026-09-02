@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>사진 방향·용량·이름 조정기</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --ink:#1c2321;
+    --ink-soft:#4a534f;
+    --paper:#f2f0ea;
+    --paper-raised:#ffffff;
+    --line:#d7d2c4;
+    --line-strong:#b7b09a;
+    --accent:#2f6f4e;
+    --accent-soft:#e4ede6;
+    --warn:#a8461f;
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --sidebar-w:380px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+    line-height:1.5;
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+
+  /* ---------- 상단 헤더: 제목 + 기능요약 ---------- */
+  .app-header{
+    background:var(--ink);
+    color:#f2f0ea;
+    padding:16px 24px;
+    display:flex;
+    align-items:center;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .app-header .title-block h1{
+    font-size:18px;
+    font-weight:700;
+    margin:0 0 2px;
+    letter-spacing:-0.01em;
+  }
+  .app-header .title-block p{
+    font-size:12px;
+    color:#c8ccc4;
+    margin:0;
+  }
+  .feature-summary{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-left:auto;
+    font-size:11.5px;
+    color:#d8dcd2;
+  }
+  .feature-summary .item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  .feature-summary .item .dot{
+    width:5px;height:5px;border-radius:50%;
+    background:#7fb896;
+    flex:0 0 5px;
+  }
+
+  /* ---------- 상단 드래그앤드롭존 (전체 폭) ---------- */
+  .dropzone{
+    margin:16px 24px 0;
+    border:1.5px dashed var(--line-strong);
+    border-radius:6px;
+    background:var(--paper-raised);
+    padding:16px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+  }
+  .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--accent-soft);}
+  .dropzone strong{font-size:13.5px;}
+  .dropzone span{font-size:12px;color:var(--ink-soft);}
+  #fileInput{display:none;}
+
+  /* ---------- 본문: 좌측 목록 / 우측 미리보기 ---------- */
+  .app-body{
+    display:flex;
+    flex:1;
+    min-height:0;
+    margin-top:16px;
+  }
+
+  .sidebar{
+    width:var(--sidebar-w);
+    flex:0 0 var(--sidebar-w);
+    background:var(--paper-raised);
+    border-right:1px solid var(--line);
+    border-top:1px solid var(--line);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+
+  .sidebar-tools{
+    padding:14px 18px;
+    border-bottom:1px solid var(--line);
+  }
+  .sidebar-tools h2{
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+  }
+  .field-row{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+  .field-row label{font-size:11.5px;color:var(--ink-soft);}
+  .field-inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  select,input[type=text],input[type=number]{
+    font-family:inherit;font-size:12.5px;
+    padding:6px 8px;border:1px solid var(--line-strong);border-radius:4px;
+    background:#fff;color:var(--ink);
+  }
+  input[type=number]{width:80px;}
+  input[type=range]{flex:1;accent-color:var(--accent);}
+  .btn{
+    font-family:inherit;font-size:12.5px;font-weight:600;
+    padding:7px 12px;border-radius:4px;border:1px solid var(--ink);
+    background:var(--ink);color:#fff;cursor:pointer;white-space:nowrap;
+  }
+  .btn:hover{opacity:.88;}
+  .btn.secondary{background:#fff;color:var(--ink);border-color:var(--line-strong);}
+  .btn.secondary:hover{background:var(--accent-soft);border-color:var(--accent);}
+  .btn.block{width:100%;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .rotate-btns{display:flex;gap:5px;flex-wrap:wrap;}
+  .rotate-btns button{
+    min-width:44px;height:30px;padding:0 8px;
+    border-radius:4px;border:1px solid var(--line-strong);
+    background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--mono);
+    color:var(--ink);
+  }
+  .rotate-btns button:hover{background:var(--accent-soft);border-color:var(--accent);}
+  .rotate-btns button.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .rotate-btns button.flip-btn{font-family:inherit;}
+
+  .list-header{
+    padding:10px 18px 6px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .list-header h2{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin:0;}
+  .badge{font-size:11px;color:var(--ink-soft);}
+  .file-list{flex:1;overflow-y:auto;padding:0 10px 12px;}
+  .file-row{
+    display:flex;align-items:center;gap:9px;
+    padding:8px 8px;border-radius:5px;cursor:pointer;border:1px solid transparent;
+  }
+  .file-row:hover{background:var(--paper);}
+  .file-row.active{background:var(--accent-soft);border-color:var(--accent);}
+  .file-row .thumb{
+    width:38px;height:38px;flex:0 0 38px;border-radius:4px;overflow:hidden;
+    background:repeating-conic-gradient(#e9e6dc 0% 25%,#f2f0ea 0% 50%) 50%/10px 10px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .file-row .thumb canvas{max-width:100%;max-height:100%;}
+  .file-row .info{flex:1;min-width:0;}
+  .file-row .info .name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .file-row .info .meta{font-size:10.5px;color:var(--ink-soft);font-family:var(--mono);}
+  .file-row .row-del{
+    width:20px;height:20px;border:none;background:transparent;color:var(--ink-soft);
+    font-size:14px;cursor:pointer;border-radius:50%;flex:0 0 20px;
+  }
+  .file-row .row-del:hover{background:var(--warn);color:#fff;}
+  .empty-list{padding:24px 18px;font-size:12px;color:var(--ink-soft);text-align:center;}
+
+  .sidebar-footer{padding:12px 18px 16px;border-top:1px solid var(--line);}
+  .status{font-size:11px;color:var(--ink-soft);margin-bottom:8px;min-height:14px;}
+
+  /* ---------- 우측 미리보기 ---------- */
+  .preview-pane{
+    flex:1;display:flex;flex-direction:column;min-width:0;
+    border-top:1px solid var(--line);
+  }
+  .preview-topbar{
+    padding:14px 24px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  .preview-topbar .file-name-edit{display:flex;align-items:center;gap:8px;flex:1;min-width:200px;}
+  .preview-topbar input[type=text]{flex:1;min-width:0;font-size:13.5px;padding:7px 9px;}
+  .preview-topbar .ext-label{font-size:12px;color:var(--ink-soft);font-family:var(--mono);}
+
+  .preview-controls{
+    display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;
+    padding:14px 24px;border-bottom:1px solid var(--line);background:var(--paper-raised);
+  }
+  .preview-controls .field{display:flex;flex-direction:column;gap:5px;}
+  .preview-controls .field label{font-size:11px;color:var(--ink-soft);}
+
+  .preview-stage{
+    flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:28px;
+    background:
+      linear-gradient(45deg,#e5e2d8 25%,transparent 25%) -20px 0/40px 40px,
+      linear-gradient(-45deg,#e5e2d8 25%,transparent 25%) -20px 0/40px 40px,
+      linear-gradient(45deg,transparent 75%,#e5e2d8 75%) -20px 0/40px 40px,
+      linear-gradient(-45deg,transparent 75%,#e5e2d8 75%) -20px 0/40px 40px,
+      var(--paper);
+  }
+  .preview-stage canvas{max-width:100%;max-height:100%;box-shadow:0 2px 14px rgba(28,35,33,.18);background:#fff;}
+  .preview-stage .placeholder{text-align:center;color:var(--ink-soft);font-size:13.5px;max-width:280px;}
+  .preview-stage .placeholder .icon{font-size:32px;display:block;margin-bottom:10px;}
+
+  .preview-bottombar{
+    padding:12px 24px;border-top:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+  }
+  .preview-bottombar .meta{font-size:12px;color:var(--ink-soft);font-family:var(--mono);}
+  .preview-bottombar .meta .after{color:var(--accent);font-weight:700;}
+  .preview-bottombar .actions{display:flex;gap:8px;}
+
+  @media (max-width:860px){
+    :root{--sidebar-w:300px;}
+    .feature-summary{margin-left:0;}
+    .preview-controls{gap:12px;}
+  }
+  @media (max-width:640px){
+    .app-body{flex-direction:column;}
+    .sidebar{width:100%;flex:none;border-right:none;border-bottom:1px solid var(--line);}
+    .file-list{max-height:260px;}
+    .preview-pane{min-height:520px;}
+  }
+</style>
+</head>
+<body>
+
+  <!-- 상단: 제목 + 기능요약 -->
+  <header class="app-header">
+    <div class="title-block">
+      <h1>사진 방향·용량·이름 조정기</h1>
+      <p>브라우저 안에서만 처리하며 서버로 전송되지 않습니다</p>
+    </div>
+    <div class="feature-summary">
+      <span class="item"><span class="dot"></span>방향 전환 (90°/180°/270°, 좌우반전)</span>
+      <span class="item"><span class="dot"></span>용량·해상도 조정</span>
+      <span class="item"><span class="dot"></span>파일명 개별·일괄 변경</span>
+      <span class="item"><span class="dot"></span>ZIP 일괄 다운로드</span>
+    </div>
+  </header>
+
+  <!-- 상단: 드래그앤드롭존 -->
+  <div class="dropzone" id="dropzone">
+    <strong>클릭 또는 파일을 끌어다 놓기</strong>
+    <span>여러 장 동시 업로드 가능</span>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+  </div>
+
+  <div class="app-body">
+
+    <!-- 좌측: 일괄조정 + 목록 -->
+    <aside class="sidebar">
+      <div class="sidebar-tools">
+        <h2>일괄 조정 · 전체 항목에 적용</h2>
+
+        <div class="field-row">
+          <label>방향</label>
+          <div class="rotate-btns">
+            <button type="button" data-batch-rotate="90">90°</button>
+            <button type="button" data-batch-rotate="180">180°</button>
+            <button type="button" data-batch-rotate="270">270°</button>
+            <button type="button" class="flip-btn" data-batch-flip title="좌우 반전">좌우반전</button>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label>최대 가로/세로(px) · 목표 용량(KB)</label>
+          <div class="field-inline">
+            <input type="number" id="batchMaxDim" min="50" placeholder="예: 1600">
+            <input type="number" id="batchTargetKB" min="10" placeholder="예: 500">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label>화질 (목표 용량 미지정 시)</label>
+          <div class="field-inline">
+            <input type="range" id="batchQuality" min="10" max="100" value="85">
+            <span id="batchQualityVal" style="font-size:11.5px;color:var(--ink-soft);width:32px;">85%</span>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label>출력 형식</label>
+          <select id="batchFormat" style="width:100%;">
+            <option value="keep">원본 유지</option>
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+          </select>
+        </div>
+
+        <button class="btn secondary block" id="applyBatchSize">전체에 크기/화질 적용</button>
+
+        <div style="height:1px;background:var(--line);margin:14px 0;"></div>
+
+        <div class="field-row">
+          <label>일괄 이름 변경 (접두어_번호)</label>
+          <div class="field-inline">
+            <input type="text" id="batchNamePrefix" placeholder="접두어" style="flex:1;min-width:0;">
+            <input type="number" id="batchNameStart" value="1" min="1" style="width:52px;">
+            <input type="number" id="batchNamePad" value="2" min="1" max="6" style="width:46px;" title="자릿수">
+          </div>
+        </div>
+        <button class="btn secondary block" id="applyBatchName">전체 이름 일괄 변경</button>
+      </div>
+
+      <div class="list-header">
+        <h2>업로드된 사진</h2>
+        <span class="badge" id="fileCountBadge">0개</span>
+      </div>
+      <div class="file-list" id="fileList">
+        <div class="empty-list" id="emptyList">사진을 업로드하면 목록이 표시됩니다.</div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="status" id="statusMsg"></div>
+        <button class="btn block" id="downloadAllZip" disabled>전체 ZIP으로 다운로드</button>
+      </div>
+    </aside>
+
+    <!-- 우측: 선택한 사진 미리보기 + 개별 조정 -->
+    <main class="preview-pane">
+      <div class="preview-topbar" id="previewTopbar" style="display:none;">
+        <div class="file-name-edit">
+          <input type="text" id="currentNameInput">
+          <span class="ext-label" id="currentExtLabel">.jpg</span>
+        </div>
+        <div class="rotate-btns">
+          <button type="button" id="curRotate90">90°</button>
+          <button type="button" id="curRotate180">180°</button>
+          <button type="button" id="curRotate270">270°</button>
+          <button type="button" class="flip-btn" id="curFlip" title="좌우 반전">좌우반전</button>
+        </div>
+      </div>
+
+      <div class="preview-controls" id="previewControls" style="display:none;">
+        <div class="field">
+          <label>최대 가로/세로(px)</label>
+          <input type="number" id="curMaxDim" min="50" placeholder="원본 유지">
+        </div>
+        <div class="field">
+          <label>목표 용량(KB)</label>
+          <input type="number" id="curTargetKB" min="10" placeholder="자동">
+        </div>
+        <div class="field">
+          <label>화질</label>
+          <div class="field-inline">
+            <input type="range" id="curQuality" min="10" max="100" value="85">
+            <span id="curQualityVal" style="font-size:11.5px;color:var(--ink-soft);width:32px;">85%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>출력 형식</label>
+          <select id="curFormat">
+            <option value="keep">원본 유지</option>
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="preview-stage" id="previewStage">
+        <div class="placeholder">
+          <span class="icon">🖼</span>
+          위에서 사진을 업로드하고 목록에서 항목을 선택하면<br>여기에 실시간 미리보기가 표시됩니다.
+        </div>
+      </div>
+
+      <div class="preview-bottombar" id="previewBottombar" style="display:none;">
+        <div class="meta">
+          <span id="curOrigSize">원본 —</span> ·
+          <span class="after" id="curAfterSize">예상 —</span>
+        </div>
+        <div class="actions">
+          <button class="btn secondary" id="downloadCurrent">이 사진만 저장</button>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- EXIF Orientation 읽기 ---------- */
+  function readExifOrientation(arrayBuffer){
+    const view = new DataView(arrayBuffer);
+    if(view.getUint16(0,false) !== 0xFFD8) return 1;
+    let offset = 2;
+    const length = view.byteLength;
+    while(offset < length){
+      const marker = view.getUint16(offset,false);
+      offset += 2;
+      if(marker === 0xFFE1){
+        if(view.getUint32(offset+2,false) !== 0x45786966) return 1;
+        const tiffOffset = offset + 8;
+        const little = view.getUint16(tiffOffset,false) === 0x4949;
+        const firstIFD = view.getUint32(tiffOffset+4, little);
+        const dirStart = tiffOffset + firstIFD;
+        const entries = view.getUint16(dirStart, little);
+        for(let i=0;i<entries;i++){
+          const entryOffset = dirStart + 2 + i*12;
+          const tag = view.getUint16(entryOffset, little);
+          if(tag === 0x0112){ return view.getUint16(entryOffset+8, little); }
+        }
+        return 1;
+      } else if((marker & 0xFF00) !== 0xFF00){
+        break;
+      } else {
+        offset += view.getUint16(offset,false);
+      }
+    }
+    return 1;
+  }
+  function applyOrientationTransform(ctx, orientation, w, h){
+    switch(orientation){
+      case 2: ctx.transform(-1,0,0,1,w,0); break;
+      case 3: ctx.transform(-1,0,0,-1,w,h); break;
+      case 4: ctx.transform(1,0,0,-1,0,h); break;
+      case 5: ctx.transform(0,1,1,0,0,0); break;
+      case 6: ctx.transform(0,1,-1,0,h,0); break;
+      case 7: ctx.transform(0,-1,-1,0,h,w); break;
+      case 8: ctx.transform(0,-1,1,0,0,w); break;
+      default: break;
+    }
+  }
+  function swapsDims(o){ return o>=5 && o<=8; }
+
+  /* ---------- 상태 ---------- */
+  let items = [];
+  let selectedId = null;
+  let idCounter = 0;
+
+  const fileList = document.getElementById('fileList');
+  const emptyList = document.getElementById('emptyList');
+  const fileCountBadge = document.getElementById('fileCountBadge');
+  const statusMsg = document.getElementById('statusMsg');
+  const downloadAllZipBtn = document.getElementById('downloadAllZip');
+
+  const previewTopbar = document.getElementById('previewTopbar');
+  const previewControls = document.getElementById('previewControls');
+  const previewStage = document.getElementById('previewStage');
+  const previewBottombar = document.getElementById('previewBottombar');
+  const currentNameInput = document.getElementById('currentNameInput');
+  const currentExtLabel = document.getElementById('currentExtLabel');
+  const curOrigSize = document.getElementById('curOrigSize');
+  const curAfterSize = document.getElementById('curAfterSize');
+
+  function getItem(id){ return items.find(it=>it.id===id); }
+
+  function updateChrome(){
+    const has = items.length>0;
+    emptyList.style.display = has ? 'none' : '';
+    fileCountBadge.textContent = items.length+'개';
+    downloadAllZipBtn.disabled = !has;
+    if(!has){
+      selectedId = null;
+      previewTopbar.style.display='none';
+      previewControls.style.display='none';
+      previewBottombar.style.display='none';
+      previewStage.innerHTML = `<div class="placeholder"><span class="icon">🖼</span>위에서 사진을 업로드하고 목록에서 항목을 선택하면<br>여기에 실시간 미리보기가 표시됩니다.</div>`;
+    }
+  }
+
+  /* ---------- 파일 추가 ---------- */
+  const fileInput = document.getElementById('fileInput');
+  const dropzone = document.getElementById('dropzone');
+  dropzone.addEventListener('click', ()=>fileInput.click());
+  fileInput.addEventListener('change', e=>handleFiles(e.target.files));
+  ['dragover','dragenter'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove('drag');}));
+  dropzone.addEventListener('drop', e=>handleFiles(e.dataTransfer.files));
+
+  function handleFiles(fileList_){
+    const files = Array.from(fileList_).filter(f=>f.type.startsWith('image/'));
+    files.forEach(file=>{
+      const reader = new FileReader();
+      reader.onload = function(e){
+        const buf = e.target.result;
+        let orientation = 1;
+        try{ orientation = readExifOrientation(buf); }catch(err){ orientation=1; }
+        const blobUrl = URL.createObjectURL(new Blob([buf],{type:file.type}));
+        const img = new Image();
+        img.onload = function(){
+          const item = {
+            id:'p'+(idCounter++),
+            file, img,
+            exifOrientation: orientation,
+            rotateDelta:0, flipH:false,
+            targetMaxDim:null, targetKB:null, quality:0.85, format:'keep',
+            name: stripExt(file.name), ext: extOf(file.name),
+            origSizeKB: Math.round(file.size/1024)
+          };
+          items.push(item);
+          renderRow(item);
+          updateChrome();
+          if(!selectedId) selectItem(item.id);
+        };
+        img.src = blobUrl;
+      };
+      reader.readAsArrayBuffer(file);
+    });
+    fileInput.value='';
+  }
+  function stripExt(n){ const i=n.lastIndexOf('.'); return i>0?n.slice(0,i):n; }
+  function extOf(n){ const i=n.lastIndexOf('.'); return i>0?n.slice(i+1).toLowerCase():'jpg'; }
+
+  /* ---------- 변환 계산 ---------- */
+  function totalRotation(item){ return ((item.rotateDelta%360)+360)%360; }
+  function computeBaseDims(item){
+    let w=item.img.naturalWidth,h=item.img.naturalHeight;
+    if(swapsDims(item.exifOrientation)) [w,h]=[h,w];
+    const r=totalRotation(item);
+    if(r===90||r===270) [w,h]=[h,w];
+    return {w,h};
+  }
+  function computeOutputDims(item){
+    let {w,h}=computeBaseDims(item);
+    if(item.targetMaxDim && item.targetMaxDim>0){
+      const scale = Math.min(1, item.targetMaxDim/Math.max(w,h));
+      w=Math.round(w*scale); h=Math.round(h*scale);
+    }
+    return {w,h};
+  }
+  function drawToCanvas(item, canvas){
+    const {w:baseW,h:baseH} = computeBaseDims(item);
+    const outDims = computeOutputDims(item);
+    canvas.width = outDims.w; canvas.height = outDims.h;
+    const ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.scale(outDims.w/baseW, outDims.h/baseH);
+    const iw=item.img.naturalWidth, ih=item.img.naturalHeight;
+    applyOrientationTransform(ctx, item.exifOrientation, iw, ih);
+    const rot = totalRotation(item);
+    if(rot!==0){
+      const exifW = swapsDims(item.exifOrientation) ? ih : iw;
+      const exifH = swapsDims(item.exifOrientation) ? iw : ih;
+      ctx.translate(exifW/2, exifH/2);
+      ctx.rotate(rot*Math.PI/180);
+      if(rot===90||rot===270){ ctx.translate(-exifH/2,-exifW/2); }
+      else { ctx.translate(-exifW/2,-exifH/2); }
+    }
+    if(item.flipH){
+      const exifW = swapsDims(item.exifOrientation) ? ih : iw;
+      ctx.translate(exifW,0); ctx.scale(-1,1);
+    }
+    ctx.drawImage(item.img,0,0,iw,ih);
+    ctx.restore();
+  }
+
+  /* ---------- 좌측 목록 렌더 ---------- */
+  function renderRow(item){
+    const row = document.createElement('div');
+    row.className = 'file-row';
+    row.dataset.id = item.id;
+    row.innerHTML = `
+      <div class="thumb"><canvas></canvas></div>
+      <div class="info">
+        <div class="name">${item.name}.${item.ext}</div>
+        <div class="meta">${item.origSizeKB}KB</div>
+      </div>
+      <button class="row-del" title="삭제">×</button>
+    `;
+    fileList.appendChild(row);
+    item._row = row;
+    const thumbCanvas = row.querySelector('.thumb canvas');
+    drawThumb(item, thumbCanvas);
+
+    row.addEventListener('click', e=>{
+      if(e.target.closest('.row-del')) return;
+      selectItem(item.id);
+    });
+    row.querySelector('.row-del').addEventListener('click', e=>{
+      e.stopPropagation();
+      items = items.filter(it=>it.id!==item.id);
+      row.remove();
+      if(selectedId===item.id){
+        selectedId=null;
+        if(items.length>0) selectItem(items[0].id);
+      }
+      updateChrome();
+    });
+  }
+
+  function drawThumb(item, canvas){
+    const {w,h} = computeBaseDims(item);
+    const scale = Math.min(1, 120/Math.max(w,h));
+    const outW = Math.max(1,Math.round(w*scale)), outH = Math.max(1,Math.round(h*scale));
+    canvas.width = outW; canvas.height = outH;
+    const ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.scale(outW/w, outH/h);
+    const iw=item.img.naturalWidth, ih=item.img.naturalHeight;
+    applyOrientationTransform(ctx, item.exifOrientation, iw, ih);
+    const rot = totalRotation(item);
+    if(rot!==0){
+      const exifW = swapsDims(item.exifOrientation) ? ih : iw;
+      const exifH = swapsDims(item.exifOrientation) ? iw : ih;
+      ctx.translate(exifW/2, exifH/2);
+      ctx.rotate(rot*Math.PI/180);
+      if(rot===90||rot===270){ ctx.translate(-exifH/2,-exifW/2); } else { ctx.translate(-exifW/2,-exifH/2); }
+    }
+    if(item.flipH){
+      const exifW = swapsDims(item.exifOrientation) ? ih : iw;
+      ctx.translate(exifW,0); ctx.scale(-1,1);
+    }
+    ctx.drawImage(item.img,0,0,iw,ih);
+    ctx.restore();
+  }
+
+  function refreshRowLabel(item){
+    if(!item._row) return;
+    item._row.querySelector('.info .name').textContent = `${item.name}.${outputExtForItem(item)}`;
+    drawThumb(item, item._row.querySelector('.thumb canvas'));
+  }
+
+  /* ---------- 선택 & 우측 미리보기 ---------- */
+  function selectItem(id){
+    selectedId = id;
+    items.forEach(it=>{ if(it._row) it._row.classList.toggle('active', it.id===id); });
+    const item = getItem(id);
+    if(!item) return;
+
+    previewTopbar.style.display = '';
+    previewControls.style.display = '';
+    previewBottombar.style.display = '';
+
+    currentNameInput.value = item.name;
+    currentExtLabel.textContent = '.'+outputExtForItem(item);
+    document.getElementById('curMaxDim').value = item.targetMaxDim || '';
+    document.getElementById('curTargetKB').value = item.targetKB || '';
+    document.getElementById('curQuality').value = Math.round(item.quality*100);
+    document.getElementById('curQualityVal').textContent = Math.round(item.quality*100)+'%';
+    document.getElementById('curFormat').value = item.format;
+    curOrigSize.textContent = `원본 ${item.origSizeKB}KB`;
+    curAfterSize.textContent = '예상 —';
+
+    updateCurrentRotateActiveState(item);
+    renderPreviewStage(item);
+  }
+
+  function updateCurrentRotateActiveState(item){
+    const r = totalRotation(item);
+    ['90','180','270'].forEach(v=>{
+      const btn = document.getElementById('curRotate'+v);
+      btn.classList.toggle('active', r===parseInt(v));
+    });
+    document.getElementById('curFlip').classList.toggle('active', !!item.flipH);
+  }
+
+  function renderPreviewStage(item){
+    previewStage.innerHTML = '<canvas></canvas>';
+    const canvas = previewStage.querySelector('canvas');
+    drawToCanvas(item, canvas);
+  }
+
+  function outputMimeFor(item){
+    if(item.format==='jpeg') return 'image/jpeg';
+    if(item.format==='png') return 'image/png';
+    const t = item.file.type;
+    return t && t.startsWith('image/') ? t : 'image/jpeg';
+  }
+  function outputExtForItem(item){
+    const mime = outputMimeFor(item);
+    if(mime==='image/png') return 'png';
+    if(mime==='image/webp') return 'webp';
+    return 'jpg';
+  }
+
+  /* ---------- 우측 개별 조정 이벤트 ---------- */
+  currentNameInput.addEventListener('input', ()=>{
+    const item = getItem(selectedId); if(!item) return;
+    item.name = currentNameInput.value;
+    refreshRowLabel(item);
+  });
+  // 90/180/270 버튼: 절대 회전값으로 설정 (다시 누르면 0도로 원복)
+  function setAbsoluteRotate(deg){
+    const item=getItem(selectedId); if(!item) return;
+    item.rotateDelta = (totalRotation(item)===deg) ? 0 : deg;
+    updateCurrentRotateActiveState(item);
+    renderPreviewStage(item); refreshRowLabel(item);
+  }
+  document.getElementById('curRotate90').addEventListener('click', ()=>setAbsoluteRotate(90));
+  document.getElementById('curRotate180').addEventListener('click', ()=>setAbsoluteRotate(180));
+  document.getElementById('curRotate270').addEventListener('click', ()=>setAbsoluteRotate(270));
+  document.getElementById('curFlip').addEventListener('click', ()=>{
+    const item=getItem(selectedId); if(!item) return;
+    item.flipH = !item.flipH;
+    updateCurrentRotateActiveState(item);
+    renderPreviewStage(item); refreshRowLabel(item);
+  });
+
+  document.getElementById('curMaxDim').addEventListener('change', e=>{
+    const item=getItem(selectedId); if(!item) return;
+    item.targetMaxDim = parseInt(e.target.value)||null;
+    renderPreviewStage(item);
+  });
+  document.getElementById('curTargetKB').addEventListener('change', e=>{
+    const item=getItem(selectedId); if(!item) return;
+    item.targetKB = parseInt(e.target.value)||null;
+  });
+  const curQuality = document.getElementById('curQuality');
+  curQuality.addEventListener('input', ()=>{
+    document.getElementById('curQualityVal').textContent = curQuality.value+'%';
+    const item=getItem(selectedId); if(item) item.quality = parseInt(curQuality.value)/100;
+  });
+  document.getElementById('curFormat').addEventListener('change', e=>{
+    const item=getItem(selectedId); if(!item) return;
+    item.format = e.target.value;
+    currentExtLabel.textContent = '.'+outputExtForItem(item);
+    refreshRowLabel(item);
+  });
+
+  /* ---------- 일괄 조정 ---------- */
+  document.querySelectorAll('[data-batch-rotate]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const deg = parseInt(btn.dataset.batchRotate);
+      items.forEach(item=>{
+        item.rotateDelta = deg;
+        refreshRowLabel(item);
+        if(item.id===selectedId){ updateCurrentRotateActiveState(item); renderPreviewStage(item); }
+      });
+    });
+  });
+  document.querySelector('[data-batch-flip]').addEventListener('click', ()=>{
+    items.forEach(item=>{
+      item.flipH = !item.flipH;
+      refreshRowLabel(item);
+      if(item.id===selectedId){ updateCurrentRotateActiveState(item); renderPreviewStage(item); }
+    });
+  });
+  const batchQuality = document.getElementById('batchQuality');
+  batchQuality.addEventListener('input', ()=>{
+    document.getElementById('batchQualityVal').textContent = batchQuality.value+'%';
+  });
+
+  document.getElementById('applyBatchSize').addEventListener('click', ()=>{
+    const maxDim = parseInt(document.getElementById('batchMaxDim').value)||null;
+    const targetKB = parseInt(document.getElementById('batchTargetKB').value)||null;
+    const quality = parseInt(batchQuality.value)/100;
+    const format = document.getElementById('batchFormat').value;
+    items.forEach(item=>{
+      item.targetMaxDim = maxDim; item.targetKB = targetKB; item.quality = quality; item.format = format;
+      refreshRowLabel(item);
+    });
+    if(selectedId) selectItem(selectedId);
+    statusMsg.textContent = '전체 항목에 크기/화질 설정을 적용했습니다.';
+  });
+
+  document.getElementById('applyBatchName').addEventListener('click', ()=>{
+    const prefix = document.getElementById('batchNamePrefix').value.trim();
+    if(!prefix){ statusMsg.textContent='접두어를 입력해주세요.'; return; }
+    let start = parseInt(document.getElementById('batchNameStart').value)||1;
+    const pad = parseInt(document.getElementById('batchNamePad').value)||2;
+    items.forEach(item=>{
+      item.name = `${prefix}_${String(start).padStart(pad,'0')}`;
+      refreshRowLabel(item);
+      start++;
+    });
+    if(selectedId) currentNameInput.value = getItem(selectedId).name;
+    statusMsg.textContent = '전체 파일명을 일괄 변경했습니다.';
+  });
+
+  /* ---------- 내보내기 ---------- */
+  function canvasToBlob(canvas, mime, quality){
+    return new Promise(res=>canvas.toBlob(b=>res(b), mime, quality));
+  }
+  async function exportItem(item){
+    const canvas = document.createElement('canvas');
+    drawToCanvas(item, canvas);
+    const mime = outputMimeFor(item);
+    const canAdjust = (mime==='image/jpeg'||mime==='image/webp');
+    let blob;
+    if(item.targetKB && canAdjust){
+      let lo=0.05, hi=0.98, best=null;
+      for(let i=0;i<7;i++){
+        const mid=(lo+hi)/2;
+        const b = await canvasToBlob(canvas, mime, mid);
+        const kb = b.size/1024;
+        if(kb>item.targetKB){ hi=mid; } else { best=b; lo=mid; }
+        if(Math.abs(kb-item.targetKB) < item.targetKB*0.04){ best=b; break; }
+      }
+      blob = best || await canvasToBlob(canvas, mime, lo);
+    } else {
+      blob = await canvasToBlob(canvas, mime, canAdjust ? item.quality : undefined);
+    }
+    const filename = `${item.name||'photo'}.${outputExtForItem(item)}`;
+    return {blob, filename, kb:Math.round(blob.size/1024)};
+  }
+
+  document.getElementById('downloadCurrent').addEventListener('click', async ()=>{
+    const item = getItem(selectedId); if(!item) return;
+    statusMsg.textContent = `${item.name} 처리 중...`;
+    const {blob, filename, kb} = await exportItem(item);
+    curAfterSize.textContent = `예상 ${kb}KB`;
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    statusMsg.textContent = `${filename} 다운로드 완료`;
+  });
+
+  downloadAllZipBtn.addEventListener('click', async ()=>{
+    if(items.length===0) return;
+    downloadAllZipBtn.disabled = true;
+    const zip = new JSZip();
+    const used = {};
+    for(let i=0;i<items.length;i++){
+      const item = items[i];
+      statusMsg.textContent = `처리 중... (${i+1}/${items.length})`;
+      const {blob, filename, kb} = await exportItem(item);
+      let finalName = filename;
+      if(used[finalName]){
+        used[finalName]++;
+        const dot = finalName.lastIndexOf('.');
+        finalName = finalName.slice(0,dot)+`_${used[finalName]}`+finalName.slice(dot);
+      } else { used[finalName]=1; }
+      zip.file(finalName, blob);
+      if(item.id===selectedId) curAfterSize.textContent = `예상 ${kb}KB`;
+    }
+    statusMsg.textContent = 'ZIP 압축 중...';
+    const content = await zip.generateAsync({type:'blob'});
+    const url = URL.createObjectURL(content);
+    const a=document.createElement('a'); a.href=url; a.download='photos.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    statusMsg.textContent = `총 ${items.length}개 파일을 ZIP으로 다운로드했습니다.`;
+    downloadAllZipBtn.disabled = false;
+  });
+
+  updateChrome();
+})();
+</script>
+</body>
+</html>
