@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>사진 방향·용량·이름 조정기</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   * { box-sizing: border-box; }
   body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background: #f8fafc; margin: 0; padding: 24px; color: #334155; }
@@ -58,8 +57,15 @@
 
   /* ---------- 일괄 조정 카드 (제목 바로 아래 배치) ---------- */
   .merge-modes { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
-  .merge-mode-card { flex: 1 1 320px; background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
+  .merge-mode-card { flex: 1 1 220px; min-width: 220px; background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
+  .merge-mode-card.card-blue { flex: 1 1 50%; min-width: 420px; }
+  .merge-mode-card.card-green { flex: 1 1 40%; min-width: 380px; }
   .merge-mode-card.card-blue { background:#eff6ff; border-color:#93c5fd; }
+  .merge-mode-card.card-green { background:#f0fdf4; border-color:#86efac; }
+  .merge-mode-card.card-green .merge-mode-title { color:#166534; }
+  .merge-mode-card.card-green .merge-mode-desc { color:#166534; }
+  .merge-mode-card.card-green .btn-apply-batch { border-color:#16a34a; color:#166534; }
+  .merge-mode-card.card-green .btn-apply-batch:hover { background:#dcfce7; }
   .merge-mode-title { font-size: 0.95rem; font-weight: 800; margin-bottom: 6px; color:#86198f; }
   .card-blue .merge-mode-title { color:#1d4ed8; }
   .merge-mode-desc { font-size: 0.8rem; line-height: 1.5; color:#86198f; }
@@ -134,17 +140,11 @@
   .preview-controls-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:10px; padding:10px 12px; background:white; border:1px solid #e2e8f0; border-radius:8px; }
 
   /* 텍스트/말풍선 삽입 패널 */
-  .annot-panel { margin-bottom:12px; padding:10px 12px; background:white; border:1px solid #e2e8f0; border-radius:8px; }
-  .annot-panel-title { font-size:0.82rem; font-weight:700; color:#334155; margin-bottom:8px; }
-  .annot-fields { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; }
-  .annot-fields .mini-field input[type=text] { width:150px; }
-  .btn-add-annot { border:1px solid #16a34a; background:#f0fdf4; color:#166534; font-size:0.78rem; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer; }
-  .btn-add-annot:hover { background:#dcfce7; }
-  .annot-list { display:flex; flex-direction:column; gap:5px; margin-top:9px; }
-  .annot-chip { display:flex; align-items:center; justify-content:space-between; gap:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:5px 9px; font-size:0.75rem; color:#334155; }
+  .annot-chips-bar { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .annot-chip { display:flex; align-items:center; gap:6px; background:#f0fdf4; border:1px solid #86efac; border-radius:14px; padding:4px 6px 4px 10px; font-size:0.74rem; color:#166534; max-width:220px; }
   .annot-chip .txt { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .annot-chip button { border:none; background:transparent; color:#cbd5e1; font-weight:800; cursor:pointer; font-size:0.8rem; }
-  .annot-chip button:hover { color:#ef4444; }
+  .annot-chip button { border:none; background:transparent; color:#4d7c0f; font-weight:800; cursor:pointer; font-size:0.8rem; line-height:1; padding:2px 4px; border-radius:50%; }
+  .annot-chip button:hover { background:#bbf7d0; color:#166534; }
 
   .preview-box { flex: 1; overflow: auto; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content:center; }
   .preview-box canvas { max-width:100%; max-height:100%; box-shadow:0 2px 10px rgba(0,0,0,0.15); background:white; }
@@ -158,7 +158,11 @@
   .btn-save-one:hover { background:#eff6ff; }
 
   .status-line { font-size:0.82rem; color:#64748b; margin-top:14px; min-height:16px; }
-  .merge-btn { width: 100%; padding: 16px; background: #10b981; color: white; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 8px; }
+  .download-row { display:flex; gap:10px; margin-top:8px; align-items:stretch; }
+  .btn-pick-dir { flex:0 0 190px; padding:0 14px; border:1.5px solid #64748b; background:white; color:#334155; border-radius:10px; font-size:0.88rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .btn-pick-dir:hover { background:#f1f5f9; }
+  .btn-pick-dir.picked { border-color:#16a34a; color:#166534; background:#f0fdf4; }
+  .merge-btn { flex:1; width: 100%; padding: 16px; background: #10b981; color: white; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 0; }
   .merge-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
   .merge-btn:hover:not(:disabled) { background:#0d9c6f; }
 
@@ -252,6 +256,49 @@
         </div>
         <button class="btn-apply-batch" id="applyBatchName">전체 이름 변경</button>
       </div>
+
+      <div class="merge-mode-card card-green">
+        <div class="merge-mode-title">🏷️ 제목·말풍선 삽입</div>
+        <div class="merge-mode-desc">목록에서 "선택"한 사진이 있으면 그 사진에만, 없으면 전체 사진에 제목 텍스트 또는 말풍선을 추가합니다.</div>
+        <div class="batch-fields">
+          <div class="mini-field">
+            <label>종류</label>
+            <select id="batchAnnotType" style="width:88px;">
+              <option value="title">제목 텍스트</option>
+              <option value="bubble">말풍선</option>
+            </select>
+          </div>
+          <div class="mini-field" style="flex:1;min-width:130px;">
+            <label>내용</label>
+            <input type="text" id="batchAnnotText" placeholder="예: 시공 전 현장 모습" style="width:100%;">
+          </div>
+          <div class="mini-field">
+            <label>위치</label>
+            <select id="batchAnnotPos" style="width:96px;">
+              <option value="top-left">상단좌측</option>
+              <option value="top-center" selected>상단중앙</option>
+              <option value="top-right">상단우측</option>
+              <option value="center">중앙</option>
+              <option value="bottom-left">하단좌측</option>
+              <option value="bottom-center">하단중앙</option>
+              <option value="bottom-right">하단우측</option>
+            </select>
+          </div>
+          <div class="mini-field">
+            <label>크기</label>
+            <select id="batchAnnotSize" style="width:66px;">
+              <option value="small">작게</option>
+              <option value="medium" selected>보통</option>
+              <option value="large">크게</option>
+            </select>
+          </div>
+          <div class="mini-field" id="batchAnnotColorWrap">
+            <label>글자색</label>
+            <input type="color" id="batchAnnotColor" value="#ffffff" style="width:44px;padding:2px;">
+          </div>
+        </div>
+        <button class="btn-apply-batch" id="applyBatchAnnot">전체 적용</button>
+      </div>
     </div>
 
     <!-- 본문: 파일목록 / 미리보기 -->
@@ -283,89 +330,9 @@
         <div class="preview-title" id="previewTitleRow" style="display:none;">
           <input type="text" id="currentNameInput" class="name-input-narrow">
           <span class="ext-label" id="currentExtLabel">.jpg</span>
-          <div class="rotate-group">
-            <button type="button" id="curRotate0">원본</button>
-            <button type="button" id="curRotate90">90°</button>
-            <button type="button" id="curRotate180">180°</button>
-            <button type="button" id="curRotate270">270°</button>
-            <button type="button" id="curFlip">좌우반전</button>
-          </div>
-          <div class="mini-field">
-            <label>최대 px</label>
-            <input type="number" id="curMaxDim" min="50" placeholder="원본" style="width:64px;">
-          </div>
-          <div class="mini-field">
-            <label>목표 KB</label>
-            <input type="number" id="curTargetKB" min="10" placeholder="자동" style="width:64px;">
-          </div>
-          <div class="mini-field">
-            <label>화질</label>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <input type="range" id="curQuality" min="10" max="100" value="85" style="width:70px;">
-              <span id="curQualityVal" style="font-size:0.72rem;color:#64748b;width:30px;">85%</span>
-            </div>
-          </div>
-          <div class="mini-field">
-            <label>형식</label>
-            <select id="curFormat" style="width:70px;">
-              <option value="keep">원본</option>
-              <option value="jpeg">JPEG</option>
-              <option value="png">PNG</option>
-            </select>
-          </div>
-          <button type="button" class="btn-toggle-annot" id="toggleAnnotBtn">🏷️ 제목·말풍선 삽입</button>
         </div>
 
-        <div class="annot-panel" id="annotPanel" style="display:none;">
-          <div class="annot-panel-title">제목과 말풍선 삽입</div>
-          <div class="annot-fields">
-            <div class="mini-field">
-              <label>종류</label>
-              <select id="annotType" style="width:100px;">
-                <option value="title">제목 텍스트</option>
-                <option value="bubble">말풍선</option>
-              </select>
-            </div>
-            <div class="mini-field">
-              <label>내용</label>
-              <input type="text" id="annotText" placeholder="예: 시공 전 현장 모습">
-            </div>
-            <div class="mini-field" id="annotPosTitleWrap">
-              <label>위치</label>
-              <select id="annotPosTitle" style="width:80px;">
-                <option value="top-center">상단</option>
-                <option value="center">중앙</option>
-                <option value="bottom-center">하단</option>
-              </select>
-            </div>
-            <div class="mini-field" id="annotPosBubbleWrap" style="display:none;">
-              <label>위치</label>
-              <select id="annotPosBubble" style="width:100px;">
-                <option value="top-left">상단좌측</option>
-                <option value="top-center">상단중앙</option>
-                <option value="top-right">상단우측</option>
-                <option value="center">중앙</option>
-                <option value="bottom-left">하단좌측</option>
-                <option value="bottom-center">하단중앙</option>
-                <option value="bottom-right">하단우측</option>
-              </select>
-            </div>
-            <div class="mini-field">
-              <label>크기</label>
-              <select id="annotSize" style="width:70px;">
-                <option value="small">작게</option>
-                <option value="medium" selected>보통</option>
-                <option value="large">크게</option>
-              </select>
-            </div>
-            <div class="mini-field" id="annotColorWrap">
-              <label>글자색</label>
-              <input type="color" id="annotColor" value="#ffffff" style="width:44px;padding:2px;">
-            </div>
-            <button class="btn-add-annot" id="addAnnotBtn">+ 추가</button>
-          </div>
-          <div class="annot-list" id="annotList"></div>
-        </div>
+        <div class="annot-chips-bar" id="annotChipsBar" style="display:none;"></div>
 
         <div class="preview-box" id="previewStage">
           <p class="preview-placeholder"><span class="icon">🖼️</span>목록에서 사진을 클릭하면<br>여기에 미리보기가 표시됩니다.</p>
@@ -379,7 +346,10 @@
     </div>
 
     <div class="status-line" id="statusMsg"></div>
-    <button class="merge-btn" id="downloadAllZip" disabled>전체 ZIP으로 다운로드</button>
+    <div class="download-row">
+      <button class="btn-pick-dir" id="btnPickDir">📁 저장 위치 선택</button>
+      <button class="merge-btn" id="downloadAllBtn" disabled>전체 사진 다운로드</button>
+    </div>
 
   </div>
 </div>
@@ -499,8 +469,38 @@
     ctx.stroke();
   }
 
+  function drawTitleBox(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fill();
+  }
+
   function sizeToFraction(size){
     return size==='small' ? 0.032 : size==='large' ? 0.062 : 0.045;
+  }
+
+  // 제목/말풍선 공통: 위치 프리셋(7곳)에 따라 박스 좌표 계산
+  function computeBoxPos(position, W, H, boxW, boxH){
+    const margin = W*0.04;
+    switch(position){
+      case 'top-left': return {bx:margin, by:margin};
+      case 'top-center': return {bx:W/2-boxW/2, by:margin};
+      case 'top-right': return {bx:W-margin-boxW, by:margin};
+      case 'bottom-left': return {bx:margin, by:H-margin-boxH};
+      case 'bottom-center': return {bx:W/2-boxW/2, by:H-margin-boxH};
+      case 'bottom-right': return {bx:W-margin-boxW, by:H-margin-boxH};
+      default: return {bx:W/2-boxW/2, by:H/2-boxH/2}; // center
+    }
   }
 
   function drawAnnotations(ctx, canvas, item){
@@ -511,44 +511,28 @@
       ctx.font = `bold ${fontPx}px 'Apple SD Gothic Neo','Malgun Gothic',sans-serif`;
       ctx.textBaseline = 'middle';
 
+      const maxWidth = W*0.6;
+      const lines = wrapText(ctx, ann.text, maxWidth);
+      const lineHeight = fontPx*1.35;
+      const padX = fontPx*0.85, padY = fontPx*0.6;
+      let textW = 0;
+      lines.forEach(l=>{ textW = Math.max(textW, ctx.measureText(l).width); });
+      const boxW = Math.min(maxWidth, textW) + padX*2;
+      const boxH = lines.length*lineHeight + padY*2;
+      const {bx, by} = computeBoxPos(ann.position, W, H, boxW, boxH);
+
       if(ann.type === 'title'){
-        ctx.textAlign = 'center';
-        const padY = fontPx*0.55;
-        const barH = fontPx + padY*2;
-        let barY;
-        if(ann.position === 'top-center') barY = 0;
-        else if(ann.position === 'bottom-center') barY = H - barH;
-        else barY = H/2 - barH/2;
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        ctx.fillRect(0, barY, W, barH);
+        drawTitleBox(ctx, bx, by, boxW, boxH, fontPx*0.4);
         ctx.fillStyle = ann.color || '#ffffff';
-        ctx.fillText(ann.text, W/2, barY + barH/2);
       } else {
-        const maxWidth = W*0.6;
-        const lines = wrapText(ctx, ann.text, maxWidth);
-        const lineHeight = fontPx*1.35;
-        const padX = fontPx*0.85, padY = fontPx*0.6;
-        let textW = 0;
-        lines.forEach(l=>{ textW = Math.max(textW, ctx.measureText(l).width); });
-        const bubbleW = Math.min(maxWidth, textW) + padX*2;
-        const bubbleH = lines.length*lineHeight + padY*2;
-        const margin = W*0.04;
-        let bx, by;
-        if(ann.position==='top-left'){ bx=margin; by=margin; }
-        else if(ann.position==='top-center'){ bx=W/2-bubbleW/2; by=margin; }
-        else if(ann.position==='top-right'){ bx=W-margin-bubbleW; by=margin; }
-        else if(ann.position==='bottom-left'){ bx=margin; by=H-margin-bubbleH; }
-        else if(ann.position==='bottom-center'){ bx=W/2-bubbleW/2; by=H-margin-bubbleH; }
-        else if(ann.position==='bottom-right'){ bx=W-margin-bubbleW; by=H-margin-bubbleH; }
-        else { bx=W/2-bubbleW/2; by=H/2-bubbleH/2; }
         const tailUp = ann.position.startsWith('bottom');
-        drawBubbleShape(ctx, bx, by, bubbleW, bubbleH, fontPx*0.5, tailUp);
+        drawBubbleShape(ctx, bx, by, boxW, boxH, fontPx*0.5, tailUp);
         ctx.fillStyle = '#1c2321';
-        ctx.textAlign = 'left';
-        lines.forEach((line,i)=>{
-          ctx.fillText(line, bx+padX, by+padY+lineHeight*i+lineHeight/2);
-        });
       }
+      ctx.textAlign = 'left';
+      lines.forEach((line,i)=>{
+        ctx.fillText(line, bx+padX, by+padY+lineHeight*i+lineHeight/2);
+      });
     });
   }
 
@@ -562,24 +546,18 @@
   const emptyList = document.getElementById('emptyList');
   const fileCountBadge = document.getElementById('fileCountBadge');
   const statusMsg = document.getElementById('statusMsg');
-  const downloadAllZipBtn = document.getElementById('downloadAllZip');
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+  const btnPickDir = document.getElementById('btnPickDir');
   const btnResetAll = document.getElementById('btnResetAll');
 
   const previewTitleRow = document.getElementById('previewTitleRow');
-  const annotPanel = document.getElementById('annotPanel');
+  const annotChipsBar = document.getElementById('annotChipsBar');
   const previewStage = document.getElementById('previewStage');
   const previewFooter = document.getElementById('previewFooter');
   const currentNameInput = document.getElementById('currentNameInput');
   const currentExtLabel = document.getElementById('currentExtLabel');
   const curOrigSize = document.getElementById('curOrigSize');
   const curAfterSize = document.getElementById('curAfterSize');
-  const toggleAnnotBtn = document.getElementById('toggleAnnotBtn');
-  let annotPanelOpen = false;
-  toggleAnnotBtn.addEventListener('click', ()=>{
-    annotPanelOpen = !annotPanelOpen;
-    annotPanel.style.display = annotPanelOpen ? '' : 'none';
-    toggleAnnotBtn.classList.toggle('active', annotPanelOpen);
-  });
 
   function getItem(id){ return items.find(it=>it.id===id); }
   function getBatchTargets(){
@@ -591,12 +569,12 @@
     const has = items.length>0;
     emptyList.style.display = has ? 'none' : '';
     fileCountBadge.textContent = items.length+'개';
-    downloadAllZipBtn.disabled = !has;
+    downloadAllBtn.disabled = !has;
     btnResetAll.disabled = !has;
     if(!has){
       selectedId = null;
       previewTitleRow.style.display='none';
-      annotPanel.style.display='none';
+      annotChipsBar.style.display='none';
       previewFooter.style.display='none';
       previewStage.innerHTML = `<p class="preview-placeholder"><span class="icon">🖼️</span>목록에서 사진을 클릭하면<br>여기에 미리보기가 표시됩니다.</p>`;
     }
@@ -802,7 +780,6 @@
 
   /* ---------- 선택 & 우측 미리보기 ---------- */
   function selectItem(id){
-    const prevId = selectedId;
     selectedId = id;
     items.forEach(it=>{
       if(it._row) it._row.classList.toggle('selected-row', it.id===id);
@@ -811,30 +788,15 @@
     if(!item) return;
 
     previewTitleRow.style.display = '';
-    annotPanel.style.display = annotPanelOpen ? '' : 'none';
     previewFooter.style.display = '';
 
     currentNameInput.value = item.name;
     currentExtLabel.textContent = '.'+outputExtForItem(item);
-    document.getElementById('curMaxDim').value = item.targetMaxDim || '';
-    document.getElementById('curTargetKB').value = item.targetKB || '';
-    document.getElementById('curQuality').value = Math.round(item.quality*100);
-    document.getElementById('curQualityVal').textContent = Math.round(item.quality*100)+'%';
-    document.getElementById('curFormat').value = item.format;
     curOrigSize.textContent = `원본 ${item.origSizeKB}KB`;
     curAfterSize.textContent = '예상 —';
 
-    updateCurrentRotateActiveState(item);
-    renderAnnotList(item);
+    renderAnnotChips(item);
     renderPreviewStage(item);
-  }
-
-  function updateCurrentRotateActiveState(item){
-    const r = totalRotation(item);
-    ['0','90','180','270'].forEach(v=>{
-      document.getElementById('curRotate'+v).classList.toggle('active', r===parseInt(v));
-    });
-    document.getElementById('curFlip').classList.toggle('active', !!item.flipH);
   }
 
   function renderPreviewStage(item){
@@ -856,104 +818,37 @@
     return 'jpg';
   }
 
-  /* ---------- 텍스트/말풍선 UI ---------- */
-  const annotType = document.getElementById('annotType');
-  const annotPosTitleWrap = document.getElementById('annotPosTitleWrap');
-  const annotPosBubbleWrap = document.getElementById('annotPosBubbleWrap');
-  const annotColorWrap = document.getElementById('annotColorWrap');
-  annotType.addEventListener('change', ()=>{
-    const isTitle = annotType.value === 'title';
-    annotPosTitleWrap.style.display = isTitle ? '' : 'none';
-    annotPosBubbleWrap.style.display = isTitle ? 'none' : '';
-    annotColorWrap.style.display = isTitle ? '' : 'none';
-  });
-
-  document.getElementById('addAnnotBtn').addEventListener('click', ()=>{
-    const item = getItem(selectedId); if(!item) return;
-    const text = document.getElementById('annotText').value.trim();
-    if(!text){ statusMsg.textContent = '삽입할 텍스트를 입력해주세요.'; return; }
-    const type = annotType.value;
-    const position = type==='title'
-      ? document.getElementById('annotPosTitle').value
-      : document.getElementById('annotPosBubble').value;
-    const size = document.getElementById('annotSize').value;
-    const color = document.getElementById('annotColor').value;
-    item.annotations.push({
-      id:'a'+(annotIdCounter++), type, text, position, size,
-      color: type==='title' ? color : null
-    });
-    document.getElementById('annotText').value = '';
-    renderAnnotList(item);
-    renderPreviewStage(item);
-    refreshRowLabel(item);
-  });
-
-  function renderAnnotList(item){
-    const list = document.getElementById('annotList');
-    list.innerHTML = '';
-    (item.annotations||[]).forEach(ann=>{
+  /* ---------- 현재 미리보기 사진에 적용된 제목·말풍선 칩 ---------- */
+  function renderAnnotChips(item){
+    annotChipsBar.innerHTML = '';
+    const list = item.annotations || [];
+    annotChipsBar.style.display = list.length>0 ? '' : 'none';
+    list.forEach(ann=>{
       const chip = document.createElement('div');
       chip.className = 'annot-chip';
-      const label = (ann.type==='title' ? '🏷️ 제목' : '💬 말풍선');
+      const label = (ann.type==='title' ? '🏷️' : '💬');
       const txt = document.createElement('span');
       txt.className = 'txt';
-      txt.textContent = `${label}: ${ann.text}`;
+      txt.textContent = `${label} ${ann.text}`;
       const delBtn = document.createElement('button');
       delBtn.textContent = '×';
-      delBtn.title = '삭제';
+      delBtn.title = '이 태그 삭제';
       delBtn.addEventListener('click', ()=>{
         item.annotations = item.annotations.filter(a=>a.id!==ann.id);
-        renderAnnotList(item);
+        renderAnnotChips(item);
         renderPreviewStage(item);
         refreshRowLabel(item);
       });
       chip.appendChild(txt);
       chip.appendChild(delBtn);
-      list.appendChild(chip);
+      annotChipsBar.appendChild(chip);
     });
   }
 
-  /* ---------- 우측 개별 조정 이벤트 ---------- */
+  /* ---------- 파일명 개별 수정 ---------- */
   currentNameInput.addEventListener('input', ()=>{
     const item = getItem(selectedId); if(!item) return;
     item.name = currentNameInput.value;
-    refreshRowLabel(item);
-  });
-  function setAbsoluteRotate(deg){
-    const item=getItem(selectedId); if(!item) return;
-    item.rotateDelta = deg;
-    updateCurrentRotateActiveState(item);
-    renderPreviewStage(item); refreshRowLabel(item);
-  }
-  document.getElementById('curRotate0').addEventListener('click', ()=>setAbsoluteRotate(0));
-  document.getElementById('curRotate90').addEventListener('click', ()=>setAbsoluteRotate(90));
-  document.getElementById('curRotate180').addEventListener('click', ()=>setAbsoluteRotate(180));
-  document.getElementById('curRotate270').addEventListener('click', ()=>setAbsoluteRotate(270));
-  document.getElementById('curFlip').addEventListener('click', ()=>{
-    const item=getItem(selectedId); if(!item) return;
-    item.flipH = !item.flipH;
-    updateCurrentRotateActiveState(item);
-    renderPreviewStage(item); refreshRowLabel(item);
-  });
-
-  document.getElementById('curMaxDim').addEventListener('change', e=>{
-    const item=getItem(selectedId); if(!item) return;
-    item.targetMaxDim = parseInt(e.target.value)||null;
-    renderPreviewStage(item);
-  });
-  document.getElementById('curTargetKB').addEventListener('change', e=>{
-    const item=getItem(selectedId); if(!item) return;
-    item.targetKB = parseInt(e.target.value)||null;
-  });
-  const curQuality = document.getElementById('curQuality');
-  curQuality.addEventListener('input', ()=>{
-    document.getElementById('curQualityVal').textContent = curQuality.value+'%';
-    const item=getItem(selectedId); if(item) item.quality = parseInt(curQuality.value)/100;
-  });
-  document.getElementById('curFormat').addEventListener('change', e=>{
-    const item=getItem(selectedId); if(!item) return;
-    item.format = e.target.value;
-    currentExtLabel.textContent = '.'+outputExtForItem(item);
     refreshRowLabel(item);
   });
 
@@ -965,7 +860,7 @@
       targets.forEach(item=>{
         item.rotateDelta = deg;
         refreshRowLabel(item);
-        if(item.id===selectedId){ updateCurrentRotateActiveState(item); renderPreviewStage(item); }
+        if(item.id===selectedId){ renderPreviewStage(item); }
       });
       statusMsg.textContent = `${targets.length}개 항목의 방향을 변경했습니다.`;
     });
@@ -975,7 +870,7 @@
     targets.forEach(item=>{
       item.flipH = !item.flipH;
       refreshRowLabel(item);
-      if(item.id===selectedId){ updateCurrentRotateActiveState(item); renderPreviewStage(item); }
+      if(item.id===selectedId){ renderPreviewStage(item); }
     });
     statusMsg.textContent = `${targets.length}개 항목을 좌우반전했습니다.`;
   });
@@ -1013,6 +908,75 @@
     statusMsg.textContent = `${targets.length}개 항목의 이름을 일괄 변경했습니다.`;
   });
 
+  /* ---------- 제목·말풍선 전체(또는 선택) 적용 ---------- */
+  const batchAnnotType = document.getElementById('batchAnnotType');
+  const batchAnnotColorWrap = document.getElementById('batchAnnotColorWrap');
+  batchAnnotType.addEventListener('change', ()=>{
+    batchAnnotColorWrap.style.display = batchAnnotType.value==='title' ? '' : 'none';
+  });
+
+  document.getElementById('applyBatchAnnot').addEventListener('click', ()=>{
+    const text = document.getElementById('batchAnnotText').value.trim();
+    if(!text){ statusMsg.textContent = '삽입할 텍스트를 입력해주세요.'; return; }
+    const type = batchAnnotType.value;
+    const position = document.getElementById('batchAnnotPos').value;
+    const size = document.getElementById('batchAnnotSize').value;
+    const color = document.getElementById('batchAnnotColor').value;
+    const targets = getBatchTargets();
+    targets.forEach(item=>{
+      item.annotations.push({
+        id:'a'+(annotIdCounter++), type, text, position, size,
+        color: type==='title' ? color : null
+      });
+      refreshRowLabel(item);
+      if(item.id===selectedId){ renderAnnotChips(item); renderPreviewStage(item); }
+    });
+    statusMsg.textContent = `${targets.length}개 항목에 ${type==='title'?'제목 텍스트':'말풍선'}을 추가했습니다.`;
+  });
+
+  /* ---------- 저장 위치 지정 (File System Access API, 지원 브라우저 한정) ---------- */
+  let saveDirHandle = null;
+  function updateDirButtonLabel(){
+    btnPickDir.textContent = saveDirHandle ? `📁 ${saveDirHandle.name} (변경)` : '📁 저장 위치 선택';
+    btnPickDir.classList.toggle('picked', !!saveDirHandle);
+  }
+  btnPickDir.addEventListener('click', async ()=>{
+    if(!window.showDirectoryPicker){
+      statusMsg.textContent = '이 브라우저는 저장 위치 지정을 지원하지 않습니다. 다운로드 폴더로 저장됩니다. (Chrome/Edge 데스크톱 권장)';
+      return;
+    }
+    try{
+      saveDirHandle = await window.showDirectoryPicker();
+      updateDirButtonLabel();
+      statusMsg.textContent = `저장 위치가 "${saveDirHandle.name}" 폴더로 지정되었습니다.`;
+    }catch(err){
+      // 사용자가 선택 창을 취소한 경우 등: 아무 처리 없이 무시
+    }
+  });
+
+  // blob을 지정한 파일명으로 저장. 저장 위치가 지정되어 있으면 그 폴더에 바로 쓰고,
+  // 아니면 브라우저 기본 다운로드 폴더로 내려받음.
+  async function saveBlob(blob, filename){
+    if(saveDirHandle){
+      try{
+        const fileHandle = await saveDirHandle.getFileHandle(filename, {create:true});
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return true;
+      }catch(err){
+        console.error(err);
+        statusMsg.textContent = '지정한 폴더에 저장하지 못해 다운로드 폴더로 저장합니다.';
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    return false;
+  }
+
   /* ---------- 내보내기 ---------- */
   function canvasToBlob(canvas, mime, quality){
     return new Promise(res=>canvas.toBlob(b=>res(b), mime, quality));
@@ -1045,21 +1009,17 @@
     statusMsg.textContent = `${item.name} 처리 중...`;
     const {blob, filename, kb} = await exportItem(item);
     curAfterSize.textContent = `예상 ${kb}KB`;
-    const url = URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download=filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    statusMsg.textContent = `${filename} 다운로드 완료`;
+    await saveBlob(blob, filename);
+    statusMsg.textContent = `${filename} 저장 완료`;
   });
 
-  downloadAllZipBtn.addEventListener('click', async ()=>{
+  downloadAllBtn.addEventListener('click', async ()=>{
     if(items.length===0) return;
-    downloadAllZipBtn.disabled = true;
-    const zip = new JSZip();
+    downloadAllBtn.disabled = true;
     const used = {};
     for(let i=0;i<items.length;i++){
       const item = items[i];
-      statusMsg.textContent = `처리 중... (${i+1}/${items.length})`;
+      statusMsg.textContent = `저장 중... (${i+1}/${items.length})`;
       const {blob, filename, kb} = await exportItem(item);
       let finalName = filename;
       if(used[finalName]){
@@ -1067,17 +1027,15 @@
         const dot = finalName.lastIndexOf('.');
         finalName = finalName.slice(0,dot)+`_${used[finalName]}`+finalName.slice(dot);
       } else { used[finalName]=1; }
-      zip.file(finalName, blob);
+      await saveBlob(blob, finalName);
       if(item.id===selectedId) curAfterSize.textContent = `예상 ${kb}KB`;
+      // 저장 위치를 지정하지 않은 경우, 브라우저가 여러 다운로드를 한꺼번에 막지 않도록 약간의 간격을 둠
+      if(!saveDirHandle) await new Promise(r=>setTimeout(r, 250));
     }
-    statusMsg.textContent = 'ZIP 압축 중...';
-    const content = await zip.generateAsync({type:'blob'});
-    const url = URL.createObjectURL(content);
-    const a=document.createElement('a'); a.href=url; a.download='photos.zip';
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-    statusMsg.textContent = `총 ${items.length}개 파일을 ZIP으로 다운로드했습니다.`;
-    downloadAllZipBtn.disabled = false;
+    statusMsg.textContent = saveDirHandle
+      ? `총 ${items.length}개 파일을 "${saveDirHandle.name}" 폴더에 저장했습니다.`
+      : `총 ${items.length}개 파일을 다운로드 폴더에 저장했습니다.`;
+    downloadAllBtn.disabled = false;
   });
 
   /* ---------- 초기화 ---------- */
