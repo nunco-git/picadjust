@@ -6,393 +6,384 @@
 <title>사진 방향·용량·이름 조정기</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
-  :root{
-    --ink:#1c2321;
-    --ink-soft:#4a534f;
-    --paper:#f2f0ea;
-    --paper-raised:#ffffff;
-    --line:#d7d2c4;
-    --line-strong:#b7b09a;
-    --accent:#2f6f4e;
-    --accent-soft:#e4ede6;
-    --warn:#a8461f;
-    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
-    --sidebar-w:380px;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;height:100%;}
-  body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
-    line-height:1.5;
-    display:flex;
-    flex-direction:column;
-    min-height:100vh;
+  * { box-sizing: border-box; }
+  body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; background: #f8fafc; margin: 0; padding: 24px; color: #334155; }
+
+  .app-container { display: grid; grid-template-columns: 1fr; gap: 30px; max-width: 1900px; width: 100%; margin: 0 auto; align-items: start; }
+
+  .main-content {
+    width: 100%; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; min-height: 88vh;
   }
 
-  /* ---------- 상단 헤더: 제목 + 기능요약 ---------- */
-  .app-header{
-    background:var(--ink);
-    color:#f2f0ea;
-    padding:16px 24px;
-    display:flex;
-    align-items:center;
-    gap:24px;
-    flex-wrap:wrap;
+  /* ---------- 상단: 제목 / 기능요약 / 드롭존 3분할 ---------- */
+  .top-section { flex: 0 0 auto; min-height: 150px; display: flex; align-items: stretch; gap: 14px; margin-bottom: 20px; }
+  .top-col-title {
+    flex: 0 0 22%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center;
+    background: linear-gradient(160deg, #fff7ed 0%, #ffedd5 100%); border: 1px solid #fed7aa; border-radius: 12px; padding: 14px 10px;
+    box-shadow: 0 1px 3px rgba(194,65,12,0.06);
   }
-  .app-header .title-block h1{
-    font-size:18px;
-    font-weight:700;
-    margin:0 0 2px;
-    letter-spacing:-0.01em;
-  }
-  .app-header .title-block p{
-    font-size:12px;
-    color:#c8ccc4;
-    margin:0;
-  }
-  .feature-summary{
-    display:flex;
-    gap:18px;
-    flex-wrap:wrap;
-    margin-left:auto;
-    font-size:11.5px;
-    color:#d8dcd2;
-  }
-  .feature-summary .item{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    white-space:nowrap;
-  }
-  .feature-summary .item .dot{
-    width:5px;height:5px;border-radius:50%;
-    background:#7fb896;
-    flex:0 0 5px;
-  }
+  .title-icon { font-size: 2rem; line-height: 1; filter: drop-shadow(0 1px 1px rgba(194,65,12,0.15)); }
+  .title-main { margin: 0; color: #9a3412; font-size: 1.25rem; font-weight: 800; line-height: 1.3; letter-spacing: -0.3px; display: block; }
+  .title-badge { background: #dcfce7; color: #166534; font-size: 0.78rem; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
 
-  /* ---------- 상단 드래그앤드롭존 (전체 폭) ---------- */
-  .dropzone{
-    margin:16px 24px 0;
-    border:1.5px dashed var(--line-strong);
-    border-radius:6px;
-    background:var(--paper-raised);
-    padding:16px 20px;
-    text-align:center;
-    cursor:pointer;
-    transition:border-color .15s, background .15s;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
+  .top-col-guide { flex: 1 1 46%; display: flex; min-width: 0; }
+  .feature-banner {
+    width: 100%; background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%); border: 1px solid #bbf7d0; border-radius: 14px;
+    padding: 14px 18px; color: #166534; box-shadow: 0 1px 3px rgba(16,24,40,0.04), 0 1px 2px rgba(16,24,40,0.03);
+    display: flex; flex-direction: column; justify-content: center;
   }
-  .dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--accent-soft);}
-  .dropzone strong{font-size:13.5px;}
-  .dropzone span{font-size:12px;color:var(--ink-soft);}
-  #fileInput{display:none;}
+  .feature-banner strong { font-size: 0.95rem; color: #15803d; letter-spacing: -0.2px; display:block; margin-bottom: 8px; }
+  .feature-banner-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:2px; }
+  .feature-banner-header strong { margin-bottom:0; }
+  .btn-reset { padding: 5px 12px; background: white; border: 1.5px solid #ef4444; color: #ef4444; border-radius: 20px; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.15s, color 0.15s; }
+  .btn-reset:hover { background: #ef4444; color: white; }
+  .btn-reset:disabled { border-color: #cbd5e1; color: #94a3b8; cursor: not-allowed; background: white; }
+  .feature-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .feature-list li { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.55); border: 1px solid rgba(187,247,208,0.7); border-radius: 8px; padding: 5px 10px; font-size: 0.8rem; }
+  .feature-list .feat-icon { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: #16a34a; color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; box-shadow: 0 2px 4px rgba(22,163,74,0.25); }
 
-  /* ---------- 본문: 좌측 목록 / 우측 미리보기 ---------- */
-  .app-body{
-    display:flex;
-    flex:1;
-    min-height:0;
-    margin-top:16px;
+  .top-col-drop { flex: 0 0 32%; display: flex; }
+  .drop-zone {
+    flex: 1; margin-bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border: 2px dashed #3b82f6; border-radius: 12px; padding: 18px; text-align: center;
+    background-color: #eff6ff; cursor: pointer; transition: background-color 0.2s, border-color 0.2s;
   }
+  .drop-zone:hover, .drop-zone.highlight { background-color: #dbeafe; border-color: #1d4ed8; }
+  .drop-zone .drop-icon { display:block; font-size: 26px; margin-bottom: 6px; }
+  .drop-zone strong { display:block; font-size: 14px; font-weight: 700; line-height: 1.5; color: #1e3a8a; letter-spacing: -0.2px; }
+  .drop-zone span { display:block; font-size: 11.5px; color:#3b5998; margin-top:3px; }
+  input[type="file"] { display: none; }
 
-  .sidebar{
-    width:var(--sidebar-w);
-    flex:0 0 var(--sidebar-w);
-    background:var(--paper-raised);
-    border-right:1px solid var(--line);
-    border-top:1px solid var(--line);
-    display:flex;
-    flex-direction:column;
-    overflow:hidden;
-  }
+  /* ---------- 일괄 조정 카드 (제목 바로 아래 배치) ---------- */
+  .merge-modes { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
+  .merge-mode-card { flex: 1 1 320px; background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
+  .merge-mode-card.card-blue { background:#eff6ff; border-color:#93c5fd; }
+  .merge-mode-title { font-size: 0.95rem; font-weight: 800; margin-bottom: 6px; color:#86198f; }
+  .card-blue .merge-mode-title { color:#1d4ed8; }
+  .merge-mode-desc { font-size: 0.8rem; line-height: 1.5; color:#86198f; }
+  .card-blue .merge-mode-desc { color:#1d4ed8; }
 
-  .sidebar-tools{
-    padding:14px 18px;
-    border-bottom:1px solid var(--line);
+  .batch-fields { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; align-items:flex-end; }
+  .mini-field { display:flex; flex-direction:column; gap:4px; }
+  .mini-field label { font-size:0.72rem; color:#64748b; }
+  .mini-field input[type=number], .mini-field input[type=text], .mini-field select { font-size:0.8rem; padding:5px 7px; border:1px solid #cbd5e1; border-radius:5px; width:84px; background:white; }
+  .mini-field input[type=range] { width:100px; }
+  .rotate-group { display:flex; gap:5px; flex-wrap:wrap; }
+  .rotate-group button {
+    min-width:44px; height:28px; padding:0 8px; border-radius:6px; border:1px solid #cbd5e1;
+    background:white; cursor:pointer; font-size:0.75rem; font-weight:700; color:#334155;
   }
-  .sidebar-tools h2{
-    font-size:11.5px;
-    font-weight:700;
-    color:var(--ink-soft);
-    margin:0 0 10px;
-  }
-  .field-row{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
-  .field-row label{font-size:11.5px;color:var(--ink-soft);}
-  .field-inline{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
-  select,input[type=text],input[type=number]{
-    font-family:inherit;font-size:12.5px;
-    padding:6px 8px;border:1px solid var(--line-strong);border-radius:4px;
-    background:#fff;color:var(--ink);
-  }
-  input[type=number]{width:80px;}
-  input[type=range]{flex:1;accent-color:var(--accent);}
-  .btn{
-    font-family:inherit;font-size:12.5px;font-weight:600;
-    padding:7px 12px;border-radius:4px;border:1px solid var(--ink);
-    background:var(--ink);color:#fff;cursor:pointer;white-space:nowrap;
-  }
-  .btn:hover{opacity:.88;}
-  .btn.secondary{background:#fff;color:var(--ink);border-color:var(--line-strong);}
-  .btn.secondary:hover{background:var(--accent-soft);border-color:var(--accent);}
-  .btn.block{width:100%;}
-  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .rotate-group button:hover { background:#eff6ff; border-color:#3b82f6; }
+  .rotate-group button.active { background:#2563eb; border-color:#2563eb; color:white; }
 
-  .rotate-btns{display:flex;gap:5px;flex-wrap:wrap;}
-  .rotate-btns button{
-    min-width:44px;height:30px;padding:0 8px;
-    border-radius:4px;border:1px solid var(--line-strong);
-    background:#fff;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--mono);
-    color:var(--ink);
-  }
-  .rotate-btns button:hover{background:var(--accent-soft);border-color:var(--accent);}
-  .rotate-btns button.active{background:var(--accent);border-color:var(--accent);color:#fff;}
-  .rotate-btns button.flip-btn{font-family:inherit;}
+  .btn-apply-batch { border:1px solid #d946ef; background:white; color:#a21caf; font-size:0.78rem; font-weight:700; padding:7px 14px; border-radius:8px; cursor:pointer; margin-top:12px; }
+  .btn-apply-batch:hover { background:#fdf4ff; }
+  .card-blue .btn-apply-batch { border-color:#3b82f6; color:#1d4ed8; }
+  .card-blue .btn-apply-batch:hover { background:#eff6ff; }
 
-  .list-header{
-    padding:10px 18px 6px;
-    display:flex;justify-content:space-between;align-items:center;
-  }
-  .list-header h2{font-size:11.5px;font-weight:700;color:var(--ink-soft);margin:0;}
-  .badge{font-size:11px;color:var(--ink-soft);}
-  .file-list{flex:1;overflow-y:auto;padding:0 10px 12px;}
-  .file-row{
-    display:flex;align-items:center;gap:9px;
-    padding:8px 8px;border-radius:5px;cursor:pointer;border:1px solid transparent;
-  }
-  .file-row:hover{background:var(--paper);}
-  .file-row.active{background:var(--accent-soft);border-color:var(--accent);}
-  .file-row .thumb{
-    width:38px;height:38px;flex:0 0 38px;border-radius:4px;overflow:hidden;
-    background:repeating-conic-gradient(#e9e6dc 0% 25%,#f2f0ea 0% 50%) 50%/10px 10px;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .file-row .thumb canvas{max-width:100%;max-height:100%;}
-  .file-row .info{flex:1;min-width:0;}
-  .file-row .info .name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .file-row .info .meta{font-size:10.5px;color:var(--ink-soft);font-family:var(--mono);}
-  .file-row .row-del{
-    width:20px;height:20px;border:none;background:transparent;color:var(--ink-soft);
-    font-size:14px;cursor:pointer;border-radius:50%;flex:0 0 20px;
-  }
-  .file-row .row-del:hover{background:var(--warn);color:#fff;}
-  .empty-list{padding:24px 18px;font-size:12px;color:var(--ink-soft);text-align:center;}
+  /* ---------- 본문: 파일목록 / 미리보기 2분할 ---------- */
+  .editor-layout { display: flex; flex-wrap: nowrap; align-items: stretch; gap: 0; margin-bottom: 20px; min-height: 420px; flex: 1 1 auto; }
 
-  .sidebar-footer{padding:12px 18px 16px;border-top:1px solid var(--line);}
-  .status{font-size:11px;color:var(--ink-soft);margin-bottom:8px;min-height:14px;}
+  .editor-resizer {
+    flex: 0 0 14px; width: 14px; background: #f1f5f9; cursor: col-resize; margin: 0 6px;
+    border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s; user-select: none; align-self: stretch;
+  }
+  .editor-resizer::before { content: '⋮'; color: #94a3b8; font-size: 14px; font-weight: bold; }
+  .editor-resizer:hover, .editor-resizer.resizing { background: #93c5fd; }
+  .editor-resizer:hover::before, .editor-resizer.resizing::before { color: white; }
 
-  /* ---------- 우측 미리보기 ---------- */
-  .preview-pane{
-    flex:1;display:flex;flex-direction:column;min-width:0;
-    border-top:1px solid var(--line);
-  }
-  .preview-topbar{
-    padding:14px 24px;border-bottom:1px solid var(--line);
-    display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-  }
-  .preview-topbar .file-name-edit{display:flex;align-items:center;gap:8px;flex:1;min-width:200px;}
-  .preview-topbar input[type=text]{flex:1;min-width:0;font-size:13.5px;padding:7px 9px;}
-  .preview-topbar .ext-label{font-size:12px;color:var(--ink-soft);font-family:var(--mono);}
+  .file-list-container { flex: 0 0 25%; min-width: 240px; max-width: 75%; border: 1px solid #e2e8f0; border-radius: 10px; background: #fafafa; height: 100%; min-height: 300px; max-height: 78vh; overflow: auto; padding: 12px; }
+  .file-list-title { font-size: 0.85rem; font-weight: 700; color: #64748b; margin: 2px 0 10px 2px; display:flex; justify-content:space-between; }
+  .file-table-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px; }
+  table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 0.83rem; text-align: left; }
+  th { background: #f8fafc; padding: 8px 10px; border-bottom: 1px solid #e2e8f0; color: #64748b; font-weight: 600; position: sticky; top: 0; white-space: nowrap; }
+  td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+  th.col-thumb, td.col-thumb { width: 50px; }
+  th.col-num, td.col-num { width: 30px; text-align:center; }
+  th.col-actions, td.col-actions { width: 118px; }
 
-  .preview-controls{
-    display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end;
-    padding:14px 24px;border-bottom:1px solid var(--line);background:var(--paper-raised);
-  }
-  .preview-controls .field{display:flex;flex-direction:column;gap:5px;}
-  .preview-controls .field label{font-size:11px;color:var(--ink-soft);}
+  tr.file-row { user-select: none; }
+  tr.file-row:hover { background: #f8fafc; }
+  tr.selected-row { background: #eff6ff; }
+  tr.selected-row td { box-shadow: inset 0 1px 0 #bfdbfe, inset 0 -1px 0 #bfdbfe; }
+  .thumb-cell { width: 34px; height: 34px; border-radius: 5px; overflow: hidden; background: repeating-conic-gradient(#e9e6dc 0% 25%,#f2f0ea 0% 50%) 50%/9px 9px; display:flex; align-items:center; justify-content:center; }
+  .thumb-cell canvas { max-width:100%; max-height:100%; }
+  .file-name-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight:500; color:#0f172a; cursor:pointer; }
+  .file-name-cell:hover { text-decoration: underline; color:#1d4ed8; }
+  .thumb-cell { cursor:pointer; }
+  .row-actions { display:flex; gap:5px; }
+  .btn-select-row { border:1px solid #93c5fd; background:white; color:#1d4ed8; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer; }
+  .btn-select-row:hover { background:#eff6ff; }
+  .btn-select-row.is-selected { background:#2563eb; border-color:#2563eb; color:white; }
+  .btn-del-row { border:1px solid #fecaca; background:white; color:#ef4444; font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:6px; cursor:pointer; }
+  .btn-del-row:hover { background:#fee2e2; }
+  .empty-list { text-align:center; color:#94a3b8; font-size:0.85rem; padding: 40px 10px; }
 
-  .preview-stage{
-    flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:28px;
-    background:
-      linear-gradient(45deg,#e5e2d8 25%,transparent 25%) -20px 0/40px 40px,
-      linear-gradient(-45deg,#e5e2d8 25%,transparent 25%) -20px 0/40px 40px,
-      linear-gradient(45deg,transparent 75%,#e5e2d8 75%) -20px 0/40px 40px,
-      linear-gradient(-45deg,transparent 75%,#e5e2d8 75%) -20px 0/40px 40px,
-      var(--paper);
-  }
-  .preview-stage canvas{max-width:100%;max-height:100%;box-shadow:0 2px 14px rgba(28,35,33,.18);background:#fff;}
-  .preview-stage .placeholder{text-align:center;color:var(--ink-soft);font-size:13.5px;max-width:280px;}
-  .preview-stage .placeholder .icon{font-size:32px;display:block;margin-bottom:10px;}
+  .preview-panel { flex: 1 1 auto; min-width: 320px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fafafa; padding: 16px; display: flex; flex-direction: column; height: 100%; min-height: 300px; max-height: 78vh; overflow: auto; }
+  .preview-title { font-size: 0.95rem; font-weight: bold; color: #334155; margin: 0 0 10px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .preview-title input[type=text] { flex:1; min-width:140px; font-size:0.9rem; padding:6px 9px; border:1px solid #cbd5e1; border-radius:6px; background:white; color:#0f172a; }
+  .preview-title input.name-input-narrow { flex: 0 1 130px; min-width:90px; }
+  .preview-title .ext-label { font-size:0.82rem; color:#64748b; }
+  .btn-toggle-annot { border:1px solid #16a34a; background:#f0fdf4; color:#166534; font-size:0.78rem; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer; white-space:nowrap; }
+  .btn-toggle-annot:hover { background:#dcfce7; }
+  .btn-toggle-annot.active { background:#16a34a; color:white; }
 
-  .preview-bottombar{
-    padding:12px 24px;border-top:1px solid var(--line);
-    display:flex;justify-content:space-between;align-items:center;gap:12px;
-  }
-  .preview-bottombar .meta{font-size:12px;color:var(--ink-soft);font-family:var(--mono);}
-  .preview-bottombar .meta .after{color:var(--accent);font-weight:700;}
-  .preview-bottombar .actions{display:flex;gap:8px;}
+  .preview-controls-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:10px; padding:10px 12px; background:white; border:1px solid #e2e8f0; border-radius:8px; }
 
-  @media (max-width:860px){
-    :root{--sidebar-w:300px;}
-    .feature-summary{margin-left:0;}
-    .preview-controls{gap:12px;}
-  }
-  @media (max-width:640px){
-    .app-body{flex-direction:column;}
-    .sidebar{width:100%;flex:none;border-right:none;border-bottom:1px solid var(--line);}
-    .file-list{max-height:260px;}
-    .preview-pane{min-height:520px;}
+  /* 텍스트/말풍선 삽입 패널 */
+  .annot-panel { margin-bottom:12px; padding:10px 12px; background:white; border:1px solid #e2e8f0; border-radius:8px; }
+  .annot-panel-title { font-size:0.82rem; font-weight:700; color:#334155; margin-bottom:8px; }
+  .annot-fields { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; }
+  .annot-fields .mini-field input[type=text] { width:150px; }
+  .btn-add-annot { border:1px solid #16a34a; background:#f0fdf4; color:#166534; font-size:0.78rem; font-weight:700; padding:6px 12px; border-radius:6px; cursor:pointer; }
+  .btn-add-annot:hover { background:#dcfce7; }
+  .annot-list { display:flex; flex-direction:column; gap:5px; margin-top:9px; }
+  .annot-chip { display:flex; align-items:center; justify-content:space-between; gap:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:5px 9px; font-size:0.75rem; color:#334155; }
+  .annot-chip .txt { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .annot-chip button { border:none; background:transparent; color:#cbd5e1; font-weight:800; cursor:pointer; font-size:0.8rem; }
+  .annot-chip button:hover { color:#ef4444; }
+
+  .preview-box { flex: 1; overflow: auto; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content:center; }
+  .preview-box canvas { max-width:100%; max-height:100%; box-shadow:0 2px 10px rgba(0,0,0,0.15); background:white; }
+  .preview-placeholder { text-align: center; color: #94a3b8; font-size: 0.85rem; max-width:260px; }
+  .preview-placeholder .icon { font-size: 28px; display:block; margin-bottom:8px; }
+
+  .preview-footer { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; }
+  .preview-footer .size-meta { font-size:0.8rem; color:#64748b; }
+  .preview-footer .size-meta .after { color:#166534; font-weight:700; }
+  .btn-save-one { border:1px solid #3b82f6; background:white; color:#1d4ed8; font-size:0.82rem; font-weight:700; padding:6px 14px; border-radius:8px; cursor:pointer; }
+  .btn-save-one:hover { background:#eff6ff; }
+
+  .status-line { font-size:0.82rem; color:#64748b; margin-top:14px; min-height:16px; }
+  .merge-btn { width: 100%; padding: 16px; background: #10b981; color: white; border: none; border-radius: 10px; font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 8px; }
+  .merge-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+  .merge-btn:hover:not(:disabled) { background:#0d9c6f; }
+
+  @media (max-width: 1180px) {
+    .app-container { display: flex; flex-direction: column; align-items: center; }
+    .main-content { min-height: auto; }
+    .top-section { flex-direction: column; }
+    .top-col-title, .top-col-guide, .top-col-drop { flex: none; width:100%; }
+    .editor-layout { flex-direction: column; }
+    .file-list-container, .preview-panel { flex: none !important; width: 100%; max-width: 100%; max-height: 420px; }
+    .editor-resizer { display: none; }
   }
 </style>
 </head>
 <body>
+<div class="app-container">
+  <div class="main-content">
 
-  <!-- 상단: 제목 + 기능요약 -->
-  <header class="app-header">
-    <div class="title-block">
-      <h1>사진 방향·용량·이름 조정기</h1>
-      <p>브라우저 안에서만 처리하며 서버로 전송되지 않습니다</p>
-    </div>
-    <div class="feature-summary">
-      <span class="item"><span class="dot"></span>방향 전환 (90°/180°/270°, 좌우반전)</span>
-      <span class="item"><span class="dot"></span>용량·해상도 조정</span>
-      <span class="item"><span class="dot"></span>파일명 개별·일괄 변경</span>
-      <span class="item"><span class="dot"></span>ZIP 일괄 다운로드</span>
-    </div>
-  </header>
-
-  <!-- 상단: 드래그앤드롭존 -->
-  <div class="dropzone" id="dropzone">
-    <strong>클릭 또는 파일을 끌어다 놓기</strong>
-    <span>여러 장 동시 업로드 가능</span>
-    <input type="file" id="fileInput" accept="image/*" multiple>
-  </div>
-
-  <div class="app-body">
-
-    <!-- 좌측: 일괄조정 + 목록 -->
-    <aside class="sidebar">
-      <div class="sidebar-tools">
-        <h2>일괄 조정 · 전체 항목에 적용</h2>
-
-        <div class="field-row">
-          <label>방향</label>
-          <div class="rotate-btns">
-            <button type="button" data-batch-rotate="90">90°</button>
-            <button type="button" data-batch-rotate="180">180°</button>
-            <button type="button" data-batch-rotate="270">270°</button>
-            <button type="button" class="flip-btn" data-batch-flip title="좌우 반전">좌우반전</button>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label>최대 가로/세로(px) · 목표 용량(KB)</label>
-          <div class="field-inline">
-            <input type="number" id="batchMaxDim" min="50" placeholder="예: 1600">
-            <input type="number" id="batchTargetKB" min="10" placeholder="예: 500">
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label>화질 (목표 용량 미지정 시)</label>
-          <div class="field-inline">
-            <input type="range" id="batchQuality" min="10" max="100" value="85">
-            <span id="batchQualityVal" style="font-size:11.5px;color:var(--ink-soft);width:32px;">85%</span>
-          </div>
-        </div>
-
-        <div class="field-row">
-          <label>출력 형식</label>
-          <select id="batchFormat" style="width:100%;">
-            <option value="keep">원본 유지</option>
-            <option value="jpeg">JPEG</option>
-            <option value="png">PNG</option>
-          </select>
-        </div>
-
-        <button class="btn secondary block" id="applyBatchSize">전체에 크기/화질 적용</button>
-
-        <div style="height:1px;background:var(--line);margin:14px 0;"></div>
-
-        <div class="field-row">
-          <label>일괄 이름 변경 (접두어_번호)</label>
-          <div class="field-inline">
-            <input type="text" id="batchNamePrefix" placeholder="접두어" style="flex:1;min-width:0;">
-            <input type="number" id="batchNameStart" value="1" min="1" style="width:52px;">
-            <input type="number" id="batchNamePad" value="2" min="1" max="6" style="width:46px;" title="자릿수">
-          </div>
-        </div>
-        <button class="btn secondary block" id="applyBatchName">전체 이름 일괄 변경</button>
+    <!-- 상단: 제목 / 기능요약 / 드롭존 -->
+    <div class="top-section">
+      <div class="top-col-title">
+        <span class="title-icon">🖼️</span>
+        <span class="title-main">사진 방향·용량·이름<br>조정기</span>
+        <span class="title-badge">🔒 100% 메모리 보안처리</span>
       </div>
 
-      <div class="list-header">
-        <h2>업로드된 사진</h2>
-        <span class="badge" id="fileCountBadge">0개</span>
+      <div class="top-col-guide">
+        <div class="feature-banner">
+          <div class="feature-banner-header">
+            <strong>🛡️ 개인정보 및 문서보안 100% 보장</strong>
+            <button type="button" class="btn-reset" id="btnResetAll" title="업로드된 사진을 모두 삭제">↺ 초기화</button>
+          </div>
+          <ul class="feature-list">
+            <li><span class="feat-icon">↻</span>방향 전환 (원본 · 90° · 180° · 270°)</li>
+            <li><span class="feat-icon">📦</span>해상도·용량(KB) 조정, 형식 변환</li>
+            <li><span class="feat-icon">✎</span>파일명 개별·일괄 변경, 제목·말풍선 삽입</li>
+          </ul>
+        </div>
       </div>
-      <div class="file-list" id="fileList">
+
+      <div class="top-col-drop">
+        <div class="drop-zone" id="dropzone">
+          <span class="drop-icon">📤</span>
+          <strong>클릭 또는 파일을 끌어다 놓기</strong>
+          <span>여러 장 동시 업로드 가능</span>
+          <input type="file" id="fileInput" accept="image/*" multiple>
+        </div>
+      </div>
+    </div>
+
+    <!-- 일괄 조정 카드: 제목 바로 아래 배치 -->
+    <div class="merge-modes">
+      <div class="merge-mode-card card-blue">
+        <div class="merge-mode-title">📐 방향·크기 일괄 조정</div>
+        <div class="merge-mode-desc">목록에서 "선택"한 사진이 있으면 그 사진에만, 없으면 전체 사진에 동일한 회전·해상도·용량·형식 설정을 적용합니다.</div>
+        <div class="batch-fields">
+          <div class="mini-field">
+            <label>방향</label>
+            <div class="rotate-group">
+              <button type="button" data-batch-rotate="0">원본</button>
+              <button type="button" data-batch-rotate="90">90°</button>
+              <button type="button" data-batch-rotate="180">180°</button>
+              <button type="button" data-batch-rotate="270">270°</button>
+              <button type="button" data-batch-flip>좌우반전</button>
+            </div>
+          </div>
+          <div class="mini-field"><label>최대 px</label><input type="number" id="batchMaxDim" min="50" placeholder="예: 1600"></div>
+          <div class="mini-field"><label>목표 KB</label><input type="number" id="batchTargetKB" min="10" placeholder="예: 500"></div>
+          <div class="mini-field">
+            <label>화질</label>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="range" id="batchQuality" min="10" max="100" value="85">
+              <span id="batchQualityVal" style="font-size:0.72rem;width:30px;">85%</span>
+            </div>
+          </div>
+          <div class="mini-field"><label>형식</label>
+            <select id="batchFormat"><option value="keep">원본</option><option value="jpeg">JPEG</option><option value="png">PNG</option></select>
+          </div>
+        </div>
+        <button class="btn-apply-batch" id="applyBatchSize">전체에 적용</button>
+      </div>
+
+      <div class="merge-mode-card">
+        <div class="merge-mode-title">✎ 파일명 일괄 변경</div>
+        <div class="merge-mode-desc">목록에서 "선택"한 사진이 있으면 그 사진에만, 없으면 전체 사진에 접두어와 시작 번호로 "접두어_번호" 형식의 이름을 순서대로 일괄 적용합니다.</div>
+        <div class="batch-fields">
+          <div class="mini-field" style="flex:1;min-width:120px;"><label>접두어</label><input type="text" id="batchNamePrefix" placeholder="예: 부여군_현장사진" style="width:100%;"></div>
+          <div class="mini-field"><label>시작 번호</label><input type="number" id="batchNameStart" value="1" min="1" style="width:64px;"></div>
+          <div class="mini-field"><label>자릿수</label><input type="number" id="batchNamePad" value="2" min="1" max="6" style="width:56px;"></div>
+        </div>
+        <button class="btn-apply-batch" id="applyBatchName">전체 이름 변경</button>
+      </div>
+    </div>
+
+    <!-- 본문: 파일목록 / 미리보기 -->
+    <div class="editor-layout" id="editorLayout">
+      <div class="file-list-container" id="fileListContainer">
+        <div class="file-list-title">
+          <span>업로드된 사진</span>
+          <span id="fileCountBadge">0개</span>
+        </div>
+        <div class="file-table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-num">#</th>
+                <th class="col-thumb"></th>
+                <th>파일명</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="fileListBody"></tbody>
+          </table>
+        </div>
         <div class="empty-list" id="emptyList">사진을 업로드하면 목록이 표시됩니다.</div>
       </div>
 
-      <div class="sidebar-footer">
-        <div class="status" id="statusMsg"></div>
-        <button class="btn block" id="downloadAllZip" disabled>전체 ZIP으로 다운로드</button>
-      </div>
-    </aside>
+      <div class="editor-resizer" id="editorResizer" title="드래그해서 폭 조절"></div>
 
-    <!-- 우측: 선택한 사진 미리보기 + 개별 조정 -->
-    <main class="preview-pane">
-      <div class="preview-topbar" id="previewTopbar" style="display:none;">
-        <div class="file-name-edit">
-          <input type="text" id="currentNameInput">
+      <div class="preview-panel">
+        <div class="preview-title" id="previewTitleRow" style="display:none;">
+          <input type="text" id="currentNameInput" class="name-input-narrow">
           <span class="ext-label" id="currentExtLabel">.jpg</span>
+          <div class="rotate-group">
+            <button type="button" id="curRotate0">원본</button>
+            <button type="button" id="curRotate90">90°</button>
+            <button type="button" id="curRotate180">180°</button>
+            <button type="button" id="curRotate270">270°</button>
+            <button type="button" id="curFlip">좌우반전</button>
+          </div>
+          <button type="button" class="btn-toggle-annot" id="toggleAnnotBtn">🏷️ 제목·말풍선 삽입</button>
         </div>
-        <div class="rotate-btns">
-          <button type="button" id="curRotate90">90°</button>
-          <button type="button" id="curRotate180">180°</button>
-          <button type="button" id="curRotate270">270°</button>
-          <button type="button" class="flip-btn" id="curFlip" title="좌우 반전">좌우반전</button>
-        </div>
-      </div>
 
-      <div class="preview-controls" id="previewControls" style="display:none;">
-        <div class="field">
-          <label>최대 가로/세로(px)</label>
-          <input type="number" id="curMaxDim" min="50" placeholder="원본 유지">
-        </div>
-        <div class="field">
-          <label>목표 용량(KB)</label>
-          <input type="number" id="curTargetKB" min="10" placeholder="자동">
-        </div>
-        <div class="field">
-          <label>화질</label>
-          <div class="field-inline">
-            <input type="range" id="curQuality" min="10" max="100" value="85">
-            <span id="curQualityVal" style="font-size:11.5px;color:var(--ink-soft);width:32px;">85%</span>
+        <div class="preview-controls-row" id="previewControls" style="display:none;">
+          <div class="mini-field">
+            <label>최대 가로/세로(px)</label>
+            <input type="number" id="curMaxDim" min="50" placeholder="원본">
+          </div>
+          <div class="mini-field">
+            <label>목표 용량(KB)</label>
+            <input type="number" id="curTargetKB" min="10" placeholder="자동">
+          </div>
+          <div class="mini-field">
+            <label>화질</label>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="range" id="curQuality" min="10" max="100" value="85">
+              <span id="curQualityVal" style="font-size:0.72rem;color:#64748b;width:30px;">85%</span>
+            </div>
+          </div>
+          <div class="mini-field">
+            <label>형식</label>
+            <select id="curFormat">
+              <option value="keep">원본</option>
+              <option value="jpeg">JPEG</option>
+              <option value="png">PNG</option>
+            </select>
           </div>
         </div>
-        <div class="field">
-          <label>출력 형식</label>
-          <select id="curFormat">
-            <option value="keep">원본 유지</option>
-            <option value="jpeg">JPEG</option>
-            <option value="png">PNG</option>
-          </select>
-        </div>
-      </div>
 
-      <div class="preview-stage" id="previewStage">
-        <div class="placeholder">
-          <span class="icon">🖼</span>
-          위에서 사진을 업로드하고 목록에서 항목을 선택하면<br>여기에 실시간 미리보기가 표시됩니다.
+        <div class="annot-panel" id="annotPanel" style="display:none;">
+          <div class="annot-panel-title">제목과 말풍선 삽입</div>
+          <div class="annot-fields">
+            <div class="mini-field">
+              <label>종류</label>
+              <select id="annotType" style="width:100px;">
+                <option value="title">제목 텍스트</option>
+                <option value="bubble">말풍선</option>
+              </select>
+            </div>
+            <div class="mini-field">
+              <label>내용</label>
+              <input type="text" id="annotText" placeholder="예: 시공 전 현장 모습">
+            </div>
+            <div class="mini-field" id="annotPosTitleWrap">
+              <label>위치</label>
+              <select id="annotPosTitle" style="width:80px;">
+                <option value="top-center">상단</option>
+                <option value="center">중앙</option>
+                <option value="bottom-center">하단</option>
+              </select>
+            </div>
+            <div class="mini-field" id="annotPosBubbleWrap" style="display:none;">
+              <label>위치</label>
+              <select id="annotPosBubble" style="width:100px;">
+                <option value="top-left">상단좌측</option>
+                <option value="top-center">상단중앙</option>
+                <option value="top-right">상단우측</option>
+                <option value="center">중앙</option>
+                <option value="bottom-left">하단좌측</option>
+                <option value="bottom-center">하단중앙</option>
+                <option value="bottom-right">하단우측</option>
+              </select>
+            </div>
+            <div class="mini-field">
+              <label>크기</label>
+              <select id="annotSize" style="width:70px;">
+                <option value="small">작게</option>
+                <option value="medium" selected>보통</option>
+                <option value="large">크게</option>
+              </select>
+            </div>
+            <div class="mini-field" id="annotColorWrap">
+              <label>글자색</label>
+              <input type="color" id="annotColor" value="#ffffff" style="width:44px;padding:2px;">
+            </div>
+            <button class="btn-add-annot" id="addAnnotBtn">+ 추가</button>
+          </div>
+          <div class="annot-list" id="annotList"></div>
         </div>
-      </div>
 
-      <div class="preview-bottombar" id="previewBottombar" style="display:none;">
-        <div class="meta">
-          <span id="curOrigSize">원본 —</span> ·
-          <span class="after" id="curAfterSize">예상 —</span>
+        <div class="preview-box" id="previewStage">
+          <p class="preview-placeholder"><span class="icon">🖼️</span>목록에서 사진을 클릭하면<br>여기에 미리보기가 표시됩니다.</p>
         </div>
-        <div class="actions">
-          <button class="btn secondary" id="downloadCurrent">이 사진만 저장</button>
+
+        <div class="preview-footer" id="previewFooter" style="display:none;">
+          <span class="size-meta"><span id="curOrigSize">원본 —</span> · <span class="after" id="curAfterSize">예상 —</span></span>
+          <button class="btn-save-one" id="downloadCurrent">이 사진만 저장</button>
         </div>
       </div>
-    </main>
+    </div>
+
+    <div class="status-line" id="statusMsg"></div>
+    <button class="merge-btn" id="downloadAllZip" disabled>전체 ZIP으로 다운로드</button>
 
   </div>
+</div>
 
 <script>
 (function(){
@@ -442,39 +433,175 @@
   }
   function swapsDims(o){ return o>=5 && o<=8; }
 
+  /* ---------- 텍스트/말풍선 렌더링 ---------- */
+  function wrapText(ctx, text, maxWidth){
+    const words = text.split(/(\s+)/).filter(w=>w.length>0);
+    const lines = [];
+    let cur = '';
+    words.forEach(w=>{
+      const test = cur + w;
+      if(ctx.measureText(test).width > maxWidth && cur.trim().length>0){
+        lines.push(cur.trim());
+        cur = w;
+      } else {
+        cur = test;
+      }
+    });
+    if(cur.trim().length>0) lines.push(cur.trim());
+    // 공백 없는 긴 한 단어(줄바꿈 없는 한국어 등) 강제 분할
+    const finalLines = [];
+    lines.forEach(line=>{
+      if(ctx.measureText(line).width <= maxWidth){ finalLines.push(line); return; }
+      let chunk = '';
+      for(const ch of line){
+        const test = chunk+ch;
+        if(ctx.measureText(test).width > maxWidth && chunk.length>0){
+          finalLines.push(chunk); chunk = ch;
+        } else { chunk = test; }
+      }
+      if(chunk.length>0) finalLines.push(chunk);
+    });
+    return finalLines.length>0 ? finalLines : [''];
+  }
+
+  function drawBubbleShape(ctx, x, y, w, h, r, tailUp){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.lineTo(x+w-r,y);
+    ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);
+    ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);
+    ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);
+    ctx.quadraticCurveTo(x,y,x+r,y);
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = Math.max(1, r*0.18);
+    ctx.strokeStyle = '#1c2321';
+    ctx.stroke();
+
+    const tailW = w*0.16;
+    const cx = x + w*0.26;
+    ctx.beginPath();
+    if(tailUp){
+      ctx.moveTo(cx, y);
+      ctx.lineTo(cx+tailW, y);
+      ctx.lineTo(cx+tailW*0.3, y - h*0.22);
+    } else {
+      ctx.moveTo(cx, y+h);
+      ctx.lineTo(cx+tailW, y+h);
+      ctx.lineTo(cx+tailW*0.3, y+h + h*0.22);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  function sizeToFraction(size){
+    return size==='small' ? 0.032 : size==='large' ? 0.062 : 0.045;
+  }
+
+  function drawAnnotations(ctx, canvas, item){
+    const W = canvas.width, H = canvas.height;
+    if(!item.annotations || item.annotations.length===0) return;
+    item.annotations.forEach(ann=>{
+      const fontPx = Math.max(10, Math.round(W * sizeToFraction(ann.size)));
+      ctx.font = `bold ${fontPx}px 'Apple SD Gothic Neo','Malgun Gothic',sans-serif`;
+      ctx.textBaseline = 'middle';
+
+      if(ann.type === 'title'){
+        ctx.textAlign = 'center';
+        const padY = fontPx*0.55;
+        const barH = fontPx + padY*2;
+        let barY;
+        if(ann.position === 'top-center') barY = 0;
+        else if(ann.position === 'bottom-center') barY = H - barH;
+        else barY = H/2 - barH/2;
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillRect(0, barY, W, barH);
+        ctx.fillStyle = ann.color || '#ffffff';
+        ctx.fillText(ann.text, W/2, barY + barH/2);
+      } else {
+        const maxWidth = W*0.6;
+        const lines = wrapText(ctx, ann.text, maxWidth);
+        const lineHeight = fontPx*1.35;
+        const padX = fontPx*0.85, padY = fontPx*0.6;
+        let textW = 0;
+        lines.forEach(l=>{ textW = Math.max(textW, ctx.measureText(l).width); });
+        const bubbleW = Math.min(maxWidth, textW) + padX*2;
+        const bubbleH = lines.length*lineHeight + padY*2;
+        const margin = W*0.04;
+        let bx, by;
+        if(ann.position==='top-left'){ bx=margin; by=margin; }
+        else if(ann.position==='top-center'){ bx=W/2-bubbleW/2; by=margin; }
+        else if(ann.position==='top-right'){ bx=W-margin-bubbleW; by=margin; }
+        else if(ann.position==='bottom-left'){ bx=margin; by=H-margin-bubbleH; }
+        else if(ann.position==='bottom-center'){ bx=W/2-bubbleW/2; by=H-margin-bubbleH; }
+        else if(ann.position==='bottom-right'){ bx=W-margin-bubbleW; by=H-margin-bubbleH; }
+        else { bx=W/2-bubbleW/2; by=H/2-bubbleH/2; }
+        const tailUp = ann.position.startsWith('bottom');
+        drawBubbleShape(ctx, bx, by, bubbleW, bubbleH, fontPx*0.5, tailUp);
+        ctx.fillStyle = '#1c2321';
+        ctx.textAlign = 'left';
+        lines.forEach((line,i)=>{
+          ctx.fillText(line, bx+padX, by+padY+lineHeight*i+lineHeight/2);
+        });
+      }
+    });
+  }
+
   /* ---------- 상태 ---------- */
   let items = [];
   let selectedId = null;
   let idCounter = 0;
+  let annotIdCounter = 0;
 
-  const fileList = document.getElementById('fileList');
+  const fileListBody = document.getElementById('fileListBody');
   const emptyList = document.getElementById('emptyList');
   const fileCountBadge = document.getElementById('fileCountBadge');
   const statusMsg = document.getElementById('statusMsg');
   const downloadAllZipBtn = document.getElementById('downloadAllZip');
+  const btnResetAll = document.getElementById('btnResetAll');
 
-  const previewTopbar = document.getElementById('previewTopbar');
+  const previewTitleRow = document.getElementById('previewTitleRow');
   const previewControls = document.getElementById('previewControls');
+  const annotPanel = document.getElementById('annotPanel');
   const previewStage = document.getElementById('previewStage');
-  const previewBottombar = document.getElementById('previewBottombar');
+  const previewFooter = document.getElementById('previewFooter');
   const currentNameInput = document.getElementById('currentNameInput');
   const currentExtLabel = document.getElementById('currentExtLabel');
   const curOrigSize = document.getElementById('curOrigSize');
   const curAfterSize = document.getElementById('curAfterSize');
+  const toggleAnnotBtn = document.getElementById('toggleAnnotBtn');
+  let annotPanelOpen = false;
+  toggleAnnotBtn.addEventListener('click', ()=>{
+    annotPanelOpen = !annotPanelOpen;
+    annotPanel.style.display = annotPanelOpen ? '' : 'none';
+    toggleAnnotBtn.classList.toggle('active', annotPanelOpen);
+  });
 
   function getItem(id){ return items.find(it=>it.id===id); }
+  function getBatchTargets(){
+    const picked = items.filter(it=>it.batchSelected);
+    return picked.length>0 ? picked : items;
+  }
 
   function updateChrome(){
     const has = items.length>0;
     emptyList.style.display = has ? 'none' : '';
     fileCountBadge.textContent = items.length+'개';
     downloadAllZipBtn.disabled = !has;
+    btnResetAll.disabled = !has;
     if(!has){
       selectedId = null;
-      previewTopbar.style.display='none';
+      previewTitleRow.style.display='none';
       previewControls.style.display='none';
-      previewBottombar.style.display='none';
-      previewStage.innerHTML = `<div class="placeholder"><span class="icon">🖼</span>위에서 사진을 업로드하고 목록에서 항목을 선택하면<br>여기에 실시간 미리보기가 표시됩니다.</div>`;
+      annotPanel.style.display='none';
+      previewFooter.style.display='none';
+      previewStage.innerHTML = `<p class="preview-placeholder"><span class="icon">🖼️</span>목록에서 사진을 클릭하면<br>여기에 미리보기가 표시됩니다.</p>`;
     }
   }
 
@@ -483,8 +610,8 @@
   const dropzone = document.getElementById('dropzone');
   dropzone.addEventListener('click', ()=>fileInput.click());
   fileInput.addEventListener('change', e=>handleFiles(e.target.files));
-  ['dragover','dragenter'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add('drag');}));
-  ['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove('drag');}));
+  ['dragover','dragenter'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add('highlight');}));
+  ['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove('highlight');}));
   dropzone.addEventListener('drop', e=>handleFiles(e.dataTransfer.files));
 
   function handleFiles(fileList_){
@@ -505,7 +632,9 @@
             rotateDelta:0, flipH:false,
             targetMaxDim:null, targetKB:null, quality:0.85, format:'keep',
             name: stripExt(file.name), ext: extOf(file.name),
-            origSizeKB: Math.round(file.size/1024)
+            origSizeKB: Math.round(file.size/1024),
+            annotations: [],
+            batchSelected: false
           };
           items.push(item);
           renderRow(item);
@@ -562,34 +691,70 @@
     }
     ctx.drawImage(item.img,0,0,iw,ih);
     ctx.restore();
+    // 회전/반전 변환이 끝난 최종 픽셀 좌표계에서 텍스트·말풍선을 그림
+    drawAnnotations(ctx, canvas, item);
   }
 
   /* ---------- 좌측 목록 렌더 ---------- */
   function renderRow(item){
-    const row = document.createElement('div');
-    row.className = 'file-row';
-    row.dataset.id = item.id;
-    row.innerHTML = `
-      <div class="thumb"><canvas></canvas></div>
-      <div class="info">
-        <div class="name">${item.name}.${item.ext}</div>
-        <div class="meta">${item.origSizeKB}KB</div>
-      </div>
-      <button class="row-del" title="삭제">×</button>
-    `;
-    fileList.appendChild(row);
-    item._row = row;
-    const thumbCanvas = row.querySelector('.thumb canvas');
-    drawThumb(item, thumbCanvas);
+    const tr = document.createElement('tr');
+    tr.className = 'file-row';
+    tr.dataset.id = item.id;
 
-    row.addEventListener('click', e=>{
-      if(e.target.closest('.row-del')) return;
-      selectItem(item.id);
+    const tdNum = document.createElement('td');
+    tdNum.className = 'col-num';
+    tr.appendChild(tdNum);
+
+    const tdThumb = document.createElement('td');
+    tdThumb.className = 'col-thumb';
+    const thumbDiv = document.createElement('div');
+    thumbDiv.className = 'thumb-cell';
+    const thumbCanvas = document.createElement('canvas');
+    thumbDiv.appendChild(thumbCanvas);
+    tdThumb.appendChild(thumbDiv);
+    tr.appendChild(tdThumb);
+
+    const tdName = document.createElement('td');
+    tdName.className = 'file-name-cell';
+    tdName.title = '클릭하면 우측에 미리보기';
+    tr.appendChild(tdName);
+
+    const tdActions = document.createElement('td');
+    tdActions.className = 'col-actions';
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'row-actions';
+    const btnSelect = document.createElement('button');
+    btnSelect.className = 'btn-select-row';
+    btnSelect.textContent = '선택';
+    btnSelect.title = '일괄 조정 적용 대상으로 선택/해제';
+    const btnDel = document.createElement('button');
+    btnDel.className = 'btn-del-row';
+    btnDel.textContent = '삭제';
+    actionsDiv.appendChild(btnSelect);
+    actionsDiv.appendChild(btnDel);
+    tdActions.appendChild(actionsDiv);
+    tr.appendChild(tdActions);
+
+    fileListBody.appendChild(tr);
+    item._row = tr;
+    item._thumbCanvas = thumbCanvas;
+    item._nameCell = tdName;
+    item._selectBtn = btnSelect;
+
+    drawThumb(item, thumbCanvas);
+    renumberRows();
+    refreshRowLabel(item);
+
+    tdName.addEventListener('click', ()=> selectItem(item.id));
+    thumbDiv.addEventListener('click', ()=> selectItem(item.id));
+    btnSelect.addEventListener('click', ()=>{
+      item.batchSelected = !item.batchSelected;
+      refreshRowLabel(item);
     });
-    row.querySelector('.row-del').addEventListener('click', e=>{
-      e.stopPropagation();
+    btnDel.addEventListener('click', ()=>{
       items = items.filter(it=>it.id!==item.id);
-      row.remove();
+      tr.remove();
+      renumberRows();
       if(selectedId===item.id){
         selectedId=null;
         if(items.length>0) selectItem(items[0].id);
@@ -598,9 +763,13 @@
     });
   }
 
+  function renumberRows(){
+    items.forEach((it,idx)=>{ if(it._row) it._row.querySelector('.col-num').textContent = idx+1; });
+  }
+
   function drawThumb(item, canvas){
     const {w,h} = computeBaseDims(item);
-    const scale = Math.min(1, 120/Math.max(w,h));
+    const scale = Math.min(1, 100/Math.max(w,h));
     const outW = Math.max(1,Math.round(w*scale)), outH = Math.max(1,Math.round(h*scale));
     canvas.width = outW; canvas.height = outH;
     const ctx = canvas.getContext('2d');
@@ -622,24 +791,32 @@
     }
     ctx.drawImage(item.img,0,0,iw,ih);
     ctx.restore();
+    drawAnnotations(ctx, canvas, item);
   }
 
   function refreshRowLabel(item){
     if(!item._row) return;
-    item._row.querySelector('.info .name').textContent = `${item.name}.${outputExtForItem(item)}`;
-    drawThumb(item, item._row.querySelector('.thumb canvas'));
+    item._nameCell.textContent = `${item.name}.${outputExtForItem(item)}`;
+    item._nameCell.title = item._nameCell.textContent;
+    drawThumb(item, item._thumbCanvas);
+    item._row.classList.toggle('selected-row', item.id===selectedId);
+    if(item._selectBtn) item._selectBtn.classList.toggle('is-selected', !!item.batchSelected);
   }
 
   /* ---------- 선택 & 우측 미리보기 ---------- */
   function selectItem(id){
+    const prevId = selectedId;
     selectedId = id;
-    items.forEach(it=>{ if(it._row) it._row.classList.toggle('active', it.id===id); });
+    items.forEach(it=>{
+      if(it._row) it._row.classList.toggle('selected-row', it.id===id);
+    });
     const item = getItem(id);
     if(!item) return;
 
-    previewTopbar.style.display = '';
+    previewTitleRow.style.display = '';
     previewControls.style.display = '';
-    previewBottombar.style.display = '';
+    annotPanel.style.display = annotPanelOpen ? '' : 'none';
+    previewFooter.style.display = '';
 
     currentNameInput.value = item.name;
     currentExtLabel.textContent = '.'+outputExtForItem(item);
@@ -652,14 +829,14 @@
     curAfterSize.textContent = '예상 —';
 
     updateCurrentRotateActiveState(item);
+    renderAnnotList(item);
     renderPreviewStage(item);
   }
 
   function updateCurrentRotateActiveState(item){
     const r = totalRotation(item);
-    ['90','180','270'].forEach(v=>{
-      const btn = document.getElementById('curRotate'+v);
-      btn.classList.toggle('active', r===parseInt(v));
+    ['0','90','180','270'].forEach(v=>{
+      document.getElementById('curRotate'+v).classList.toggle('active', r===parseInt(v));
     });
     document.getElementById('curFlip').classList.toggle('active', !!item.flipH);
   }
@@ -683,19 +860,76 @@
     return 'jpg';
   }
 
+  /* ---------- 텍스트/말풍선 UI ---------- */
+  const annotType = document.getElementById('annotType');
+  const annotPosTitleWrap = document.getElementById('annotPosTitleWrap');
+  const annotPosBubbleWrap = document.getElementById('annotPosBubbleWrap');
+  const annotColorWrap = document.getElementById('annotColorWrap');
+  annotType.addEventListener('change', ()=>{
+    const isTitle = annotType.value === 'title';
+    annotPosTitleWrap.style.display = isTitle ? '' : 'none';
+    annotPosBubbleWrap.style.display = isTitle ? 'none' : '';
+    annotColorWrap.style.display = isTitle ? '' : 'none';
+  });
+
+  document.getElementById('addAnnotBtn').addEventListener('click', ()=>{
+    const item = getItem(selectedId); if(!item) return;
+    const text = document.getElementById('annotText').value.trim();
+    if(!text){ statusMsg.textContent = '삽입할 텍스트를 입력해주세요.'; return; }
+    const type = annotType.value;
+    const position = type==='title'
+      ? document.getElementById('annotPosTitle').value
+      : document.getElementById('annotPosBubble').value;
+    const size = document.getElementById('annotSize').value;
+    const color = document.getElementById('annotColor').value;
+    item.annotations.push({
+      id:'a'+(annotIdCounter++), type, text, position, size,
+      color: type==='title' ? color : null
+    });
+    document.getElementById('annotText').value = '';
+    renderAnnotList(item);
+    renderPreviewStage(item);
+    refreshRowLabel(item);
+  });
+
+  function renderAnnotList(item){
+    const list = document.getElementById('annotList');
+    list.innerHTML = '';
+    (item.annotations||[]).forEach(ann=>{
+      const chip = document.createElement('div');
+      chip.className = 'annot-chip';
+      const label = (ann.type==='title' ? '🏷️ 제목' : '💬 말풍선');
+      const txt = document.createElement('span');
+      txt.className = 'txt';
+      txt.textContent = `${label}: ${ann.text}`;
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '×';
+      delBtn.title = '삭제';
+      delBtn.addEventListener('click', ()=>{
+        item.annotations = item.annotations.filter(a=>a.id!==ann.id);
+        renderAnnotList(item);
+        renderPreviewStage(item);
+        refreshRowLabel(item);
+      });
+      chip.appendChild(txt);
+      chip.appendChild(delBtn);
+      list.appendChild(chip);
+    });
+  }
+
   /* ---------- 우측 개별 조정 이벤트 ---------- */
   currentNameInput.addEventListener('input', ()=>{
     const item = getItem(selectedId); if(!item) return;
     item.name = currentNameInput.value;
     refreshRowLabel(item);
   });
-  // 90/180/270 버튼: 절대 회전값으로 설정 (다시 누르면 0도로 원복)
   function setAbsoluteRotate(deg){
     const item=getItem(selectedId); if(!item) return;
-    item.rotateDelta = (totalRotation(item)===deg) ? 0 : deg;
+    item.rotateDelta = deg;
     updateCurrentRotateActiveState(item);
     renderPreviewStage(item); refreshRowLabel(item);
   }
+  document.getElementById('curRotate0').addEventListener('click', ()=>setAbsoluteRotate(0));
   document.getElementById('curRotate90').addEventListener('click', ()=>setAbsoluteRotate(90));
   document.getElementById('curRotate180').addEventListener('click', ()=>setAbsoluteRotate(180));
   document.getElementById('curRotate270').addEventListener('click', ()=>setAbsoluteRotate(270));
@@ -727,23 +961,27 @@
     refreshRowLabel(item);
   });
 
-  /* ---------- 일괄 조정 ---------- */
+  /* ---------- 일괄 조정 (선택된 항목이 있으면 그 항목만, 없으면 전체) ---------- */
   document.querySelectorAll('[data-batch-rotate]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       const deg = parseInt(btn.dataset.batchRotate);
-      items.forEach(item=>{
+      const targets = getBatchTargets();
+      targets.forEach(item=>{
         item.rotateDelta = deg;
         refreshRowLabel(item);
         if(item.id===selectedId){ updateCurrentRotateActiveState(item); renderPreviewStage(item); }
       });
+      statusMsg.textContent = `${targets.length}개 항목의 방향을 변경했습니다.`;
     });
   });
   document.querySelector('[data-batch-flip]').addEventListener('click', ()=>{
-    items.forEach(item=>{
+    const targets = getBatchTargets();
+    targets.forEach(item=>{
       item.flipH = !item.flipH;
       refreshRowLabel(item);
       if(item.id===selectedId){ updateCurrentRotateActiveState(item); renderPreviewStage(item); }
     });
+    statusMsg.textContent = `${targets.length}개 항목을 좌우반전했습니다.`;
   });
   const batchQuality = document.getElementById('batchQuality');
   batchQuality.addEventListener('input', ()=>{
@@ -755,12 +993,13 @@
     const targetKB = parseInt(document.getElementById('batchTargetKB').value)||null;
     const quality = parseInt(batchQuality.value)/100;
     const format = document.getElementById('batchFormat').value;
-    items.forEach(item=>{
+    const targets = getBatchTargets();
+    targets.forEach(item=>{
       item.targetMaxDim = maxDim; item.targetKB = targetKB; item.quality = quality; item.format = format;
       refreshRowLabel(item);
     });
     if(selectedId) selectItem(selectedId);
-    statusMsg.textContent = '전체 항목에 크기/화질 설정을 적용했습니다.';
+    statusMsg.textContent = `${targets.length}개 항목에 크기/화질 설정을 적용했습니다.`;
   });
 
   document.getElementById('applyBatchName').addEventListener('click', ()=>{
@@ -768,13 +1007,14 @@
     if(!prefix){ statusMsg.textContent='접두어를 입력해주세요.'; return; }
     let start = parseInt(document.getElementById('batchNameStart').value)||1;
     const pad = parseInt(document.getElementById('batchNamePad').value)||2;
-    items.forEach(item=>{
+    const targets = getBatchTargets();
+    targets.forEach(item=>{
       item.name = `${prefix}_${String(start).padStart(pad,'0')}`;
       refreshRowLabel(item);
       start++;
     });
     if(selectedId) currentNameInput.value = getItem(selectedId).name;
-    statusMsg.textContent = '전체 파일명을 일괄 변경했습니다.';
+    statusMsg.textContent = `${targets.length}개 항목의 이름을 일괄 변경했습니다.`;
   });
 
   /* ---------- 내보내기 ---------- */
@@ -843,6 +1083,60 @@
     statusMsg.textContent = `총 ${items.length}개 파일을 ZIP으로 다운로드했습니다.`;
     downloadAllZipBtn.disabled = false;
   });
+
+  /* ---------- 초기화 ---------- */
+  btnResetAll.addEventListener('click', ()=>{
+    if(items.length===0) return;
+    if(!confirm('업로드된 사진을 모두 삭제할까요?')) return;
+    items = [];
+    selectedId = null;
+    fileListBody.innerHTML = '';
+    statusMsg.textContent = '전체 목록을 초기화했습니다.';
+    updateChrome();
+  });
+
+  /* ---------- 파일목록/미리보기 폭 조절(드래그 리사이저) ---------- */
+  (function initResizer(){
+    const layout = document.getElementById('editorLayout');
+    const leftPanel = document.getElementById('fileListContainer');
+    const resizer = document.getElementById('editorResizer');
+    let dragging = false;
+
+    resizer.addEventListener('mousedown', e=>{
+      dragging = true;
+      resizer.classList.add('resizing');
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', e=>{
+      if(!dragging) return;
+      const rect = layout.getBoundingClientRect();
+      let newW = e.clientX - rect.left;
+      const minW = 240;
+      const maxW = rect.width * 0.75;
+      newW = Math.max(minW, Math.min(maxW, newW));
+      leftPanel.style.flex = `0 0 ${newW}px`;
+    });
+    window.addEventListener('mouseup', ()=>{
+      if(!dragging) return;
+      dragging = false;
+      resizer.classList.remove('resizing');
+      document.body.style.userSelect = '';
+    });
+    // 터치 지원
+    resizer.addEventListener('touchstart', e=>{ dragging = true; resizer.classList.add('resizing'); }, {passive:true});
+    window.addEventListener('touchmove', e=>{
+      if(!dragging) return;
+      const touch = e.touches[0];
+      const rect = layout.getBoundingClientRect();
+      let newW = touch.clientX - rect.left;
+      const minW = 240;
+      const maxW = rect.width * 0.75;
+      newW = Math.max(minW, Math.min(maxW, newW));
+      leftPanel.style.flex = `0 0 ${newW}px`;
+    }, {passive:true});
+    window.addEventListener('touchend', ()=>{ dragging=false; resizer.classList.remove('resizing'); });
+  })();
 
   updateChrome();
 })();
