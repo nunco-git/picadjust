@@ -56,10 +56,10 @@
   input[type="file"] { display: none; }
 
   /* ---------- 일괄 조정 카드 (제목 바로 아래 배치) ---------- */
-  .merge-modes { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; }
-  .merge-mode-card { flex: 1 1 220px; min-width: 220px; background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
-  .merge-mode-card.card-blue { flex: 1 1 50%; min-width: 420px; }
-  .merge-mode-card.card-green { flex: 1 1 40%; min-width: 380px; }
+  .merge-modes { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: nowrap; align-items: stretch; }
+  .merge-mode-card { flex: 1 1 0; min-width: 180px; background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
+  .merge-mode-card.card-blue { flex: 1.8 1 0; min-width: 260px; }
+  .merge-mode-card.card-green { flex: 1.5 1 0; min-width: 240px; }
   .merge-mode-card.card-blue { background:#eff6ff; border-color:#93c5fd; }
   .merge-mode-card.card-green { background:#f0fdf4; border-color:#86efac; }
   .merge-mode-card.card-green .merge-mode-title { color:#166534; }
@@ -71,8 +71,10 @@
   .merge-mode-desc { font-size: 0.8rem; line-height: 1.5; color:#86198f; }
   .card-blue .merge-mode-desc { color:#1d4ed8; }
 
-  .batch-fields { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; align-items:flex-end; }
+  .batch-fields { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; align-items:flex-end; align-content:flex-start; flex:1 1 auto; }
   .mini-field { display:flex; flex-direction:column; gap:4px; }
+  .mini-field-inline { flex-direction:row; align-items:center; gap:8px; }
+  .mini-field-inline label { white-space:nowrap; }
   .mini-field label { font-size:0.72rem; color:#64748b; }
   .mini-field input[type=number], .mini-field input[type=text], .mini-field select { font-size:0.8rem; padding:5px 7px; border:1px solid #cbd5e1; border-radius:5px; width:84px; background:white; }
   .mini-field input[type=range] { width:100px; }
@@ -84,7 +86,7 @@
   .rotate-group button:hover { background:#eff6ff; border-color:#3b82f6; }
   .rotate-group button.active { background:#2563eb; border-color:#2563eb; color:white; }
 
-  .btn-apply-batch { border:1px solid #d946ef; background:white; color:#a21caf; font-size:0.78rem; font-weight:700; padding:7px 14px; border-radius:8px; cursor:pointer; margin-top:12px; }
+  .btn-apply-batch { border:1px solid #d946ef; background:white; color:#a21caf; font-size:0.78rem; font-weight:700; padding:9px 14px; border-radius:8px; cursor:pointer; margin-top:16px; align-self:stretch; width:100%; }
   .btn-apply-batch:hover { background:#fdf4ff; }
   .card-blue .btn-apply-batch { border-color:#3b82f6; color:#1d4ed8; }
   .card-blue .btn-apply-batch:hover { background:#eff6ff; }
@@ -171,9 +173,13 @@
     .main-content { min-height: auto; }
     .top-section { flex-direction: column; }
     .top-col-title, .top-col-guide, .top-col-drop { flex: none; width:100%; }
+    .merge-modes { flex-wrap: wrap; }
+    .merge-mode-card, .merge-mode-card.card-blue, .merge-mode-card.card-green { flex: 1 1 100%; min-width: 0; }
     .editor-layout { flex-direction: column; }
     .file-list-container, .preview-panel { flex: none !important; width: 100%; max-width: 100%; max-height: 420px; }
     .editor-resizer { display: none; }
+    .download-row { flex-direction: column; }
+    .btn-pick-dir { flex: none !important; width: 100% !important; }
   }
 </style>
 </head>
@@ -227,7 +233,6 @@
               <button type="button" data-batch-rotate="90">90°</button>
               <button type="button" data-batch-rotate="180">180°</button>
               <button type="button" data-batch-rotate="270">270°</button>
-              <button type="button" data-batch-flip>좌우반전</button>
             </div>
           </div>
           <div class="mini-field"><label>최대 px</label><input type="number" id="batchMaxDim" min="50" placeholder="예: 1600"></div>
@@ -235,7 +240,7 @@
           <div class="mini-field">
             <label>화질</label>
             <div style="display:flex;align-items:center;gap:6px;">
-              <input type="range" id="batchQuality" min="10" max="100" value="85">
+              <input type="range" id="batchQuality" min="10" max="100" value="85" style="width:70px;">
               <span id="batchQualityVal" style="font-size:0.72rem;width:30px;">85%</span>
             </div>
           </div>
@@ -243,18 +248,19 @@
             <select id="batchFormat"><option value="keep">원본</option><option value="jpeg">JPEG</option><option value="png">PNG</option></select>
           </div>
         </div>
-        <button class="btn-apply-batch" id="applyBatchSize">전체에 적용</button>
+        <button class="btn-apply-batch" id="applyBatchSize">전체 적용</button>
       </div>
 
       <div class="merge-mode-card">
         <div class="merge-mode-title">✎ 파일명 일괄 변경</div>
-        <div class="merge-mode-desc">목록에서 "선택"한 사진이 있으면 그 사진에만, 없으면 전체 사진에 접두어와 시작 번호로 "접두어_번호" 형식의 이름을 순서대로 일괄 적용합니다.</div>
+        <div class="merge-mode-desc">목록에서 "선택"한 사진이 있으면 그 사진에만, 없으면 전체 사진에 접두어를 붙이고 "접두어_번호" 형식으로 순서대로 이름을 일괄 적용합니다.</div>
         <div class="batch-fields">
-          <div class="mini-field" style="flex:1;min-width:120px;"><label>접두어</label><input type="text" id="batchNamePrefix" placeholder="예: 부여군_현장사진" style="width:100%;"></div>
-          <div class="mini-field"><label>시작 번호</label><input type="number" id="batchNameStart" value="1" min="1" style="width:64px;"></div>
-          <div class="mini-field"><label>자릿수</label><input type="number" id="batchNamePad" value="2" min="1" max="6" style="width:56px;"></div>
+          <div class="mini-field mini-field-inline" style="flex:1;">
+            <label>접두어</label>
+            <input type="text" id="batchNamePrefix" placeholder="예: 부여군_현장사진" style="flex:1;">
+          </div>
         </div>
-        <button class="btn-apply-batch" id="applyBatchName">전체 이름 변경</button>
+        <button class="btn-apply-batch" id="applyBatchName">전체 적용</button>
       </div>
 
       <div class="merge-mode-card card-green">
@@ -865,15 +871,6 @@
       statusMsg.textContent = `${targets.length}개 항목의 방향을 변경했습니다.`;
     });
   });
-  document.querySelector('[data-batch-flip]').addEventListener('click', ()=>{
-    const targets = getBatchTargets();
-    targets.forEach(item=>{
-      item.flipH = !item.flipH;
-      refreshRowLabel(item);
-      if(item.id===selectedId){ renderPreviewStage(item); }
-    });
-    statusMsg.textContent = `${targets.length}개 항목을 좌우반전했습니다.`;
-  });
   const batchQuality = document.getElementById('batchQuality');
   batchQuality.addEventListener('input', ()=>{
     document.getElementById('batchQualityVal').textContent = batchQuality.value+'%';
@@ -896,8 +893,8 @@
   document.getElementById('applyBatchName').addEventListener('click', ()=>{
     const prefix = document.getElementById('batchNamePrefix').value.trim();
     if(!prefix){ statusMsg.textContent='접두어를 입력해주세요.'; return; }
-    let start = parseInt(document.getElementById('batchNameStart').value)||1;
-    const pad = parseInt(document.getElementById('batchNamePad').value)||2;
+    let start = 1;
+    const pad = 2;
     const targets = getBatchTargets();
     targets.forEach(item=>{
       item.name = `${prefix}_${String(start).padStart(pad,'0')}`;
@@ -1056,6 +1053,13 @@
     const resizer = document.getElementById('editorResizer');
     let dragging = false;
 
+    function syncPickDirWidth(){
+      const w = leftPanel.getBoundingClientRect().width;
+      if(w > 0){
+        btnPickDir.style.flex = `0 0 ${Math.round(w)}px`;
+      }
+    }
+
     resizer.addEventListener('mousedown', e=>{
       dragging = true;
       resizer.classList.add('resizing');
@@ -1070,6 +1074,7 @@
       const maxW = rect.width * 0.75;
       newW = Math.max(minW, Math.min(maxW, newW));
       leftPanel.style.flex = `0 0 ${newW}px`;
+      syncPickDirWidth();
     });
     window.addEventListener('mouseup', ()=>{
       if(!dragging) return;
@@ -1088,8 +1093,13 @@
       const maxW = rect.width * 0.75;
       newW = Math.max(minW, Math.min(maxW, newW));
       leftPanel.style.flex = `0 0 ${newW}px`;
+      syncPickDirWidth();
     }, {passive:true});
     window.addEventListener('touchend', ()=>{ dragging=false; resizer.classList.remove('resizing'); });
+
+    // 초기 렌더 및 창 크기 변경 시에도 저장위치 버튼 폭을 파일목록 칸 폭에 맞춤
+    window.addEventListener('resize', syncPickDirWidth);
+    requestAnimationFrame(syncPickDirWidth);
   })();
 
   updateChrome();
