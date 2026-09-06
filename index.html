@@ -81,11 +81,14 @@
 
   /* ---------- 일괄 조정 카드 (제목 바로 아래 배치) ---------- */
   .merge-modes { display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: nowrap; align-items: stretch; }
-  .merge-mode-card { flex: 1 1 0; min-width: 180px; background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
+  .merge-mode-card { flex: 1 1 0; min-width: 180px; background: #fdf4ff; border: 1px solid #f0abfc; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease; }
+  .merge-mode-card:hover { border-color: #e879f9; box-shadow: 0 6px 16px rgba(162,28,175,0.14); transform: translateY(-1px); }
   .merge-mode-card.card-blue { flex: 1.8 1 0; min-width: 260px; }
   .merge-mode-card.card-green { flex: 1.5 1 0; min-width: 240px; }
   .merge-mode-card.card-blue { background:#eff6ff; border-color:#93c5fd; }
+  .merge-mode-card.card-blue:hover { border-color:#60a5fa; box-shadow: 0 6px 16px rgba(37,99,235,0.14); }
   .merge-mode-card.card-green { background:#f0fdf4; border-color:#86efac; }
+  .merge-mode-card.card-green:hover { border-color:#4ade80; box-shadow: 0 6px 16px rgba(22,163,74,0.14); }
   .merge-mode-card.card-green .merge-mode-title { color:#166534; }
   .merge-mode-card.card-green .merge-mode-desc { color:#166534; }
   .merge-mode-card.card-green .btn-apply-batch { border-color:#16a34a; color:#166534; }
